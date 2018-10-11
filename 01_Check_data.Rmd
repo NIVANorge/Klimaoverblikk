@@ -10,7 +10,8 @@ output:
     df_print: paged
 ---
 
-Getting an overview of the data
+Getting an overview of the data   
+* *NOTE:* Tables in .md file edited manually in order to be nicely rendered in Github (mostly for testing/learning...)  
 
 ## 0. Libraries
 ```{r}
