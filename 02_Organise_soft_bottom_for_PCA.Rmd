@@ -1,0 +1,236 @@
+---
+title: "Organising soft-bottom data for PCA"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged    
+---
+
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+# install.packages("vegan")
+library(vegan)
+```
+
+### Function for finding text in R files  
+```{r}
+
+search_text <- function(string, dir = ".", extension = c("R","Rmd"), pattern = NULL, fixed = FALSE, ignore.case = TRUE, deep = FALSE){
+  if (!is.null(extension) & !is.null(pattern))
+    warning("Pattern will take predence over extension")
+  if (is.null(pattern)) {
+    ext <- paste(extension, collapse = "|")
+    pattern <- paste0("\\.(", paste(extension, collapse = '|'), ")$")
+	}
+  fn <- list.files(path = dir, pattern = pattern, full.names = TRUE, recursive = deep)
+  search <- plyr::alply(fn, 1, function(x) grep(string,  readLines(x, warn = FALSE), fixed = fixed, ignore.case = ignore.case), .progress = "text")
+  fn[plyr::laply(search, length) > 0]	
+  }
+```
+
+## 1. Check organisation/analysis of hard-bottom data from Guri's scripts   
+### a. Content of folders (see code)  
+```{r}
+dir("Datasett/hardbunn_kopi")
+dir("Datasett/hardbunn_kopi/r workspace")
+#
+# Used this to explore where different data sets occur:
+# search_text("ord1.df", "Datasett/hardbunn_kopi/r workspace")
+# 
+```
+
+### b. Read 'transekt.df' which Guri used for ordination  
+Does not include ord1.df, which is used in 'Klimaoverblikk_hardbunn.Rmd', but does include a lot of other stuff...  
+Order of Guri's scripts:  
+1) HBdata.R: HBdata -> Hbuse  
+2) HBOrdinasjon.R: Hbuse -> HBagg -> transekt.df -> SiteSpec -> spec.m -> ordinasjon -> ord1.df  
+```{r}
+load("Datasett/hardbunn_kopi/r workspace/.RData")
+
+# Let us delete everything except transekt.df
+obj <- ls()
+rm(list = obj[!obj %in% c("transekt.df")])
+
+str(transekt.df)
+```
+
+### c. Create data for ordination ('spec.m') and perform ordination   
+From Guri's code in 'HBOrdinasjon.R', except the first part     
+* 'transekt.df' is in 'long format'  
+* Is reshaped to broad format ('SiteSpec'). *Note* that this one is later combined with PCA output to create 'ord1.df'   
+* For the ordination, the year and site columns are removed and NA -> 0 ('spec.m')   
+```{r, warning=FALSE}
+# table(transekt.df$Sitename)
+transekt.df <- transekt.df %>%
+  mutate(Site = substr(Sitename, 1,3), Year = as.numeric(substr(Sitename, 5,8))) %>%
+  select(Site, Year, Species, Value)
+# names(transekt.df) = c("Site", "Year", "Species", "Value")
+
+# gjor om til vidt format
+SiteSpec = reshape(transekt.df, idvar = c("Site", "Year"), timevar = "Species", direction = "wide")
+# names(SiteSpec)
+
+# Endrer navnene
+artsnavn = names(SiteSpec)[-c(1:2)]
+artsnavn = gsub("Value.", "", artsnavn)
+artsnavn = gsub(" \n", "", artsnavn)
+# artsnavn
+
+# artsmatrise
+spec.m = SiteSpec[, -c(1:2)]
+names(spec.m) = artsnavn
+
+# må erstatte NA med 0
+spec.m[is.na(spec.m)] = 0
+
+cat("Dimensions of 'spec.m':\n", dim(spec.m))
+```
+
+### d. Perform ordination
+```{r}
+# Transekt
+ord1 <- decorana(spec.m)
+
+# Pretty longish output
+# summary(ord1) # viser arts- og rutescorer
+
+# Short output
+summary(ord1, display = "none")
+```
+### e. Test plot 1
+```{r}
+plot(ord1) # sorte sirkler er sites, røde pluss er arter
+```
+
+### f. Test plot 2
+```{r}
+plot(ord1, display = "sites", type = "n")
+points(ord1, display = "sites", pch = 21, col = "red", bg = "yellow")
+```
+
+### g. Make data set for the plots done in 'Klimaoverblikk_hardbunn.Rmd'  
+```{r}
+# trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
+ord1.sites <- data.frame(scores(ord1, display = "sites"))
+
+ord1.df <- data.frame(SiteSpec[,c(1:2)], ord1.sites)
+
+str(ord1.df)
+```
+
+### h. Redone plots done in 'Klimaoverblikk_hardbunn.Rmd'   
+* *BUT* they look a bit different... so the input data are probably not identical  
+```{r}
+# Innledende DCA - litt usikker på utfallet  
+DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.1
+```
+
+
+## 2. Reorganise soft-bottom fauna data and test ordination
+### a. Data
+```{r}
+df_blot_b35 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B35_artsliste")
+colnames(df_blot_b35)[1] <- "Species"
+
+df_blot_b05 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B05_artsliste")
+colnames(df_blot_b05)[1] <- "Species"
+
+df_blot_ind <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "indekser_sedimentparametere")
+
+cat("b35, number of species:", nrow(df_blot_b35), ", Number of years:", ncol(df_blot_b35), "\n")
+cat("b05, number of species:", nrow(df_blot_b05), ", Number of years:", ncol(df_blot_b05), "\n")
+```
+
+### b. Put on data long format, combine, and extract Site and Year separately
+```{r}
+df_long_1 <- df_blot_b05 %>%
+  gather("Siteyear", "Value", B05_1990:B05_2016)
+df_long_2 <- df_blot_b35 %>%
+  gather("Siteyear", "Value", B35_1990:B35_2016)
+
+df_long <- bind_rows(df_long_1, df_long_2) %>%
+  mutate(Site = substr(Siteyear, 1,3), Year = as.numeric(substr(Siteyear, 5,8))) %>%
+  select(Site, Year, Species, Value)
+
+str(df_long)
+```
+
+### c. Reshape for ordination  
+Reshape to wide format the tidyr way (instead of using reshape()) - gives us nice column names right away  
+```{r}
+SiteSpec <- df_long %>%
+  spread(Species, Value)
+
+# artsmatrise
+spec.m = SiteSpec[, -c(1:2)]
+
+# må erstatte NA med 0
+spec.m[is.na(spec.m)] = 0
+
+cat("Dimensions of 'spec.m':\n", dim(spec.m))
+```
+
+### d. Perform ordination
+```{r}
+# Transekt
+ord1 <- decorana(spec.m)
+
+# Pretty longish output
+# summary(ord1) # viser arts- og rutescorer
+
+# Short output
+summary(ord1, display = "none")
+```
+### e. Test plot 1
+```{r}
+plot(ord1) # sorte sirkler er sites, røde pluss er arter
+```
+
+### f. Test plot 2
+```{r}
+plot(ord1, display = "sites", type = "n")
+points(ord1, display = "sites", pch = 21, col = "red", bg = "yellow")
+```
+
+### g. Make data set for ggplot
+```{r}
+# trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
+ord1.sites <- data.frame(scores(ord1, display = "sites"))
+
+ord1.df <- data.frame(SiteSpec[,c(1:2)], ord1.sites)
+
+str(ord1.df)
+```
+
+### h. Redone plots similar to 'Klimaoverblikk_hardbunn.Rmd'   
+```{r}
+# Innledende DCA - litt usikker på utfallet  
+DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.1
+```
