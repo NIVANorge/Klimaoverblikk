@@ -99,8 +99,11 @@ Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.nu
 Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
 
 # summary(Df.Arendal)
-xtabs(~Depth + Month, Df.Arendal)
-xtabs(~Year + Month, Df.Arendal)
+tb <- xtabs(~Depth + Month, Df.Arendal)
+pandoc.table(tb, style = "rmarkdown")
+
+tb <- xtabs(~Year + Month, Df.Arendal)
+pandoc.table(tb, style = "rmarkdown")
 ```
 
 ### b. Plot salinity, depth 10 m
