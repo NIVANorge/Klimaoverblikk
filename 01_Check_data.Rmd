@@ -1,0 +1,258 @@
+---
+title: "Overview and some plots of the data"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+Getting an overview of the data
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(pander)
+```
+
+## 1. Folders and files    
+Content of folders (see code)  
+```{r}
+dir("Datasett")
+dir("Datasett/River data (from OKA)")
+dir("Datasett/hydrografi")
+dir("Datasett/Bløtbunn")
+dir("Datasett/hardbunn_kopi")
+dir("Datasett/Plankton")
+```
+
+## 2. River data   
+Content of folders (see code)
+```{r}
+dir("Datasett/River data (from OKA)/Annual mean flows")
+dir("Datasett/River data (from OKA)/Monthly loads")
+dir("Datasett/River data (from OKA)/Concentrations (individual samples)")
+dir("Datasett/River data (from OKA)/Monthly flow-weighted concentrations")
+```
+
+### a. Data; example: Storelva loads
+```{r}
+df <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx")  
+# df <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx", skip = 1)  
+# summary(df)
+
+df <- as.data.frame(df)[-1,]
+# colnames(df) %>% dput()
+vars <- c("TrspTot TOTN", "TrspTot NO3-N", "TrspTot NH4-N", "TrspTot TOTP", 
+          "TrspTot TOC", "TrspTot ALK", "TrspTot Ca", "DisTot")
+for (var in vars)
+  df[,var] <- as.numeric(df[,var])
+df$Time <- with(df, lubridate::ymd(paste(Year, Month, "15")))
+
+# Add "_" in column names (TrspTot Ca -> TrspTot_Ca)
+colnames(df) <- sub(" ", "_", colnames(df), fixed = TRUE)
+
+tb <- df %>% 
+  gather("Variable", Value, TrspTot_TOTN:DisTot) %>%
+  filter(!is.na(Value)) %>%
+  xtabs(~Year + Variable, .)
+pandoc.table(tb, style = "rmarkdown")
+```
+
+### b. Plot Storelva loads  
+```{r}
+gg <- df %>%
+  gather("Variable", Value,  TrspTot_TOTN:DisTot) %>%
+  ggplot(aes(Time, Value)) + 
+    geom_line() +
+    facet_wrap(~Variable, scales = "free_y")
+gg
+```
+
+### c. Plot annual flow  
+```{r}
+df <- read_excel("Datasett/River data (from OKA)/Annual mean flows/Mean annual flow.xlsx")
+# df <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx", skip = 1)  
+# summary(df)
+
+df <- as.data.frame(df)[-1,]
+colnames(df) <- sub(" ", "_", colnames(df), fixed = TRUE)
+# colnames(df) %>% dput()
+vars <- c("DisMean")
+for (var in vars)
+  df[,var] <- as.numeric(df[,var])
+
+ggplot(df, aes(Year, DisMean)) + geom_line() + facet_wrap(~Station_name)
+
+```
+
+## 3. Hydrografi  
+### a. Data  
+Tables of coverages of depth and seasons  
+```{r}
+load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
+Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
+Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+
+# summary(Df.Arendal)
+xtabs(~Depth + Month, Df.Arendal)
+xtabs(~Year + Month, Df.Arendal)
+```
+
+### b. Plot salinity, depth 10 m
+```{r}
+ggplot(Df.Arendal %>% filter(Depth == 10), aes(Dato, Salt)) +
+  geom_line() + geom_point()
+```
+
+### c. Salinity, time series by month and depth
+```{r}
+Df.Arendal %>%
+  group_by(Year, Month, Depth) %>%
+  summarise_all(mean) %>%
+  ggplot(aes(Year, Salt)) + 
+    geom_line() + 
+    facet_grid(Month~Depth)
+```
+
+
+## 4. Soft bottom fauna  
+### a. Data
+```{r}
+df_blot_b35 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B35_artsliste")
+colnames(df_blot_b35)[1] <- "Species"
+
+df_blot_b05 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B05_artsliste")
+colnames(df_blot_b05)[1] <- "Species"
+
+df_blot_ind <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "indekser_sedimentparametere")
+
+cat("Number of species:", nrow(df_blot_b35), "\nNumber of years:", ncol(df_blot_b35), "\n")
+```
+
+### b. Station B35, boxplot of the 10% most abundant species   
+```{r}
+df <- df_blot_b35 %>%
+  gather("Year", "N", -Species) %>%
+  mutate(N = ifelse(is.na(N),0,N)) %>%
+  group_by(Species) %>%
+  mutate(Median_per_species = median(N))
+
+cat("Percentiles of median abundance per species:\n")
+quantile(df$Median_per_species, (0:10)/10, na.rm = TRUE)
+
+df %>%
+  filter(Median_per_species >= 2) %>%
+  ggplot(aes(Species, N)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+ 
+## 5. Hard-bottom fauna  
+### a. Data (already chewed a bit on)
+```{r}
+# dir("Datasett/hardbunn_kopi")
+# readLines("Datasett/hardbunn_kopi/HBanalysesett.csv", 2)
+df <- readr::read_csv2("Datasett/hardbunn_kopi/HBanalysesett.csv")
+```
+
+### b. Plot DCA
+```{r}
+df %>%
+  gather("DCA_axis", "Value", DCA1:DCA4) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~DCA_axis)
+```
+
+### c. Plot NMDS  
+```{r}
+df %>%
+  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~NMDS_axis)
+```
+
+### d. Plot DCAstrand
+```{r}
+df %>%
+  gather("DCA_axis", "Value", DCA1strand:DCA4strand) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~DCA_axis)
+```
+
+### e. Plot species
+```{r, fig.width=9}
+df %>%
+  gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
+  mutate(Species = sub("LDG.", "", Species)) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~Species)
+```
+
+## 6. Phytoplankton
+### a. Data   
+* Note: deleted the empty second row manually, and one empty column 
+* Also copied the data (just the range with data, A1:V471) to a new sheet
+```{r}
+df <- read_excel("Datasett/Plankton/Planteplankton Arendal.xlsx") # range = "A1:V471"
+df$Year <- lubridate::year(df$Dato)
+df$Month <- lubridate::month(df$Dato)
+xtabs(~Year + Month, df)
+```
+
+### b. Plot time series of main groups
+```{r, fig.height=3.5}
+df %>%
+  gather("Group", "Value", Kiselalger:Flagellater) %>%
+  ggplot(aes(Dato, Value)) +
+    geom_line() +
+    facet_wrap(~Group, scale = "free_y")
+```
+
+### c. Plot time series of main groups by month
+```{r}
+df %>%
+  gather("Group", "Value", Kiselalger:Flagellater) %>%
+  group_by(Year, Month, Group) %>%
+  summarize(Value = mean(Value)) %>%
+  filter(Month %in% c(2,4,6,8,10)) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Group~Month, scale = "free_y")
+```
+
+### d. Plot time series of 6 main taxa (by median abundance) by month
+```{r, fig.height=6}
+mean_abundance <- apply(df %>% select(Cyanophycea:Chlorophycea), 2, mean, na.rm = TRUE) %>% sort() %>% rev()
+median_abundance <- apply(df %>% select(Cyanophycea:Chlorophycea), 2, median, na.rm = TRUE) %>% sort() %>% rev()
+taxa <- names(median_abundance) %>% head(6)
+df %>%
+  gather("Taxon", "Value", Cyanophycea:Chlorophycea) %>%
+  group_by(Year, Month, Taxon) %>%
+  summarize(Value = mean(Value)) %>%
+  filter(Month %in% c(2,4,6,8,10) & Taxon %in% taxa) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Taxon~Month, scale = "free_y")
+```
+
+### e. Plot time series of 5 lesser taxa (by median abundance) by month
+```{r, fig.height=6}
+taxa <- names(median_abundance) %>% tail(5)
+df %>%
+  gather("Taxon", "Value", Cyanophycea:Chlorophycea) %>%
+  group_by(Year, Month, Taxon) %>%
+  summarize(Value = mean(Value)) %>%
+  filter(Month %in% c(2,4,6,8,10) & Taxon %in% taxa) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Taxon~Month, scale = "free_y")
+```
+
+
