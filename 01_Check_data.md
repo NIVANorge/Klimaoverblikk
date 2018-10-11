@@ -162,8 +162,6 @@ tb <- df %>%
 pandoc.table(tb, style = "rmarkdown")
 ```
 
-```
-
 
 |  &nbsp;  | DisTot | TrspTot_ALK | TrspTot_Ca | TrspTot_NH4-N |
 |:--------:|:------:|:-----------:|:----------:|:-------------:|
@@ -225,7 +223,7 @@ pandoc.table(tb, style = "rmarkdown")
 | **2014** |      12       |     12      |      12      |      12      |
 | **2015** |      12       |     12      |      12      |      12      |
 
-```
+
 
 ### b. Plot Storelva loads  
 
