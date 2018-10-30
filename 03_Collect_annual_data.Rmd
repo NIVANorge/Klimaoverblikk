@@ -39,7 +39,7 @@ dir("Datasett/River data (from OKA)/Concentrations (individual samples)")
 dir("Datasett/River data (from OKA)/Monthly flow-weighted concentrations")
 ```
 
-### a. Data; example: Storelva loads
+### a. Data of river loads
 ```{r}
 df1 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx")  
 
@@ -47,9 +47,9 @@ df2 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Gjerstadelva_Nid
 
 df3 <- read_excel("Datasett/River data (from OKA)/Monthly loads/RIDx5_monthly loads.xlsx")  
 
-head(df1, 3)
-head(df2, 3)
-head(df3, 3)
+# head(df1, 3)
+# head(df2, 3)
+# head(df3, 3)
 
 colnames(df1) %>% dput()
 colnames(df2) %>% dput()
@@ -113,7 +113,7 @@ df3 <- df2 %>%
 ```
 
 ### e. Test regression of every station / varibale / quarter
-```{r, fig.height = 15}
+```{r, fig.height = 18}
 get_reg_coef <- function(df) {
   lm <- lm(Mean ~ Year, data = df)
   subset(tidy(lm), term == "Year")
@@ -129,10 +129,18 @@ m_yeareffect <- df3 %>%
 
 ggplot(m_yeareffect, aes(Variable, statistic, fill = factor(p.value < 0.05))) +
          geom_col() +
+  theme(axis.title.x = element_text(size = 4)) +
   coord_flip()
 
 #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2))
 ```
+## 3. Hydrography
+```{r}
+load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
+Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
+Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+```
+
 
 
 

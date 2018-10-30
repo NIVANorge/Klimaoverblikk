@@ -137,7 +137,7 @@ dir("Datasett/River data (from OKA)/Monthly flow-weighted concentrations")
 ## [3] "Storelva_flow-weighted mean_month.xlsx"
 ```
 
-### a. Data; example: Storelva loads
+### a. Data of river loads
 
 ```r
 df1 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx")  
@@ -146,36 +146,10 @@ df2 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Gjerstadelva_Nid
 
 df3 <- read_excel("Datasett/River data (from OKA)/Monthly loads/RIDx5_monthly loads.xlsx")  
 
-head(df1, 3)
-```
+# head(df1, 3)
+# head(df2, 3)
+# head(df3, 3)
 
-<div data-pagedtable="false">
-  <script data-pagedtable-source type="application/json">
-{"columns":[{"label":["Station ID"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["Station Code"],"name":[2],"type":["chr"],"align":["left"]},{"label":["Station name"],"name":[3],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Month"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["TrspTot TOTN"],"name":[6],"type":["chr"],"align":["left"]},{"label":["TrspTot NO3-N"],"name":[7],"type":["chr"],"align":["left"]},{"label":["TrspTot NH4-N"],"name":[8],"type":["chr"],"align":["left"]},{"label":["TrspTot TOTP"],"name":[9],"type":["chr"],"align":["left"]},{"label":["TrspTot TOC"],"name":[10],"type":["chr"],"align":["left"]},{"label":["TrspTot ALK"],"name":[11],"type":["chr"],"align":["left"]},{"label":["TrspTot Ca"],"name":[12],"type":["chr"],"align":["left"]},{"label":["DisTot"],"name":[13],"type":["chr"],"align":["left"]}],"data":[{"1":"NA","2":"NA","3":"NA","4":"NA","5":"NA","6":"Kg","7":"Kg","8":"Kg","9":"Kg","10":"Kg","11":"Km","12":"Kg","13":"m3"},{"1":"14680","2":"VEGAAR 11","3":"Storelva v/ Nes verk","4":"1990","5":"1","6":"NA","7":"NA","8":"NA","9":"NA","10":"NA","11":"NA","12":"NA","13":"26920417.025920399"},{"1":"14680","2":"VEGAAR 11","3":"Storelva v/ Nes verk","4":"1990","5":"2","6":"NA","7":"NA","8":"NA","9":"NA","10":"NA","11":"NA","12":"NA","13":"69119714.104767695"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-</div>
-
-```r
-head(df2, 3)
-```
-
-<div data-pagedtable="false">
-  <script data-pagedtable-source type="application/json">
-{"columns":[{"label":["Station ID"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["Station Code"],"name":[2],"type":["chr"],"align":["left"]},{"label":["Station name"],"name":[3],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Month"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["TrspTot TOTN"],"name":[6],"type":["chr"],"align":["left"]},{"label":["TrspTot NO3-N"],"name":[7],"type":["chr"],"align":["left"]},{"label":["TrspTot NH4-N"],"name":[8],"type":["chr"],"align":["left"]},{"label":["TrspTot TOTP"],"name":[9],"type":["chr"],"align":["left"]},{"label":["TrspTot TOC"],"name":[10],"type":["chr"],"align":["left"]},{"label":["TrspTot ALK"],"name":[11],"type":["chr"],"align":["left"]},{"label":["TrspTot Ca"],"name":[12],"type":["chr"],"align":["left"]},{"label":["DisTot"],"name":[13],"type":["chr"],"align":["left"]}],"data":[{"1":"NA","2":"NA","3":"NA","4":"NA","5":"NA","6":"Kg","7":"Kg","8":"Kg","9":"Kg","10":"Kg","11":"Km","12":"Kg","13":"m3"},{"1":"12100","2":"OVELV 3 1","3":"Søndeledelva v. Søndeleddammen","4":"1990","5":"1","6":"23199.808584706701","7":"13849.2787305985","8":"2037.2996925892201","9":"NA","10":"164284.05929017","11":"1579.4133809008899","12":"88586.984514178796","13":"40144600.960498802"},{"1":"12100","2":"OVELV 3 1","3":"Søndeledelva v. Søndeleddammen","4":"1990","5":"2","6":"37462.8814262206","7":"22293.687654999401","8":"3805.8536058290201","9":"NA","10":"302942.48518765299","11":"2703.6963563633699","12":"132572.46576606401","13":"75182809.912218198"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-</div>
-
-```r
-head(df3, 3)
-```
-
-<div data-pagedtable="false">
-  <script data-pagedtable-source type="application/json">
-{"columns":[{"label":["Station ID"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["Station Code"],"name":[2],"type":["chr"],"align":["left"]},{"label":["Station name"],"name":[3],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Month"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["TrspTot TOTN"],"name":[6],"type":["chr"],"align":["left"]},{"label":["TrspTot NO3-N"],"name":[7],"type":["chr"],"align":["left"]},{"label":["TrspTot NH4-N"],"name":[8],"type":["chr"],"align":["left"]},{"label":["TrspTot TOTP"],"name":[9],"type":["chr"],"align":["left"]},{"label":["TrspTot PO4-P"],"name":[10],"type":["chr"],"align":["left"]},{"label":["TrspTot TOC"],"name":[11],"type":["chr"],"align":["left"]},{"label":["TrspTot SPM"],"name":[12],"type":["chr"],"align":["left"]},{"label":["TrspTot SiO2"],"name":[13],"type":["chr"],"align":["left"]},{"label":["DisTot"],"name":[14],"type":["chr"],"align":["left"]}],"data":[{"1":"NA","2":"NA","3":"NA","4":"NA","5":"NA","6":"Kg","7":"Kg","8":"Kg","9":"Kg","10":"Kg","11":"Kg","12":"Kg","13":"Kg","14":"m3"},{"1":"29612","2":"BUSEDRA","3":"Drammenselva","4":"1990","5":"1","6":"178426.30775056101","7":"121897.217932584","8":"NA","9":"3030.6931078651601","10":"469.82260112359501","11":"NA","12":"567680.060224719","13":"NA","14":"691863662.02247095"},{"1":"29612","2":"BUSEDRA","3":"Drammenselva","4":"1990","5":"2","6":"311495.31692065398","7":"216115.052414645","8":"NA","9":"5115.0293468926702","10":"1366.78926816543","11":"NA","12":"1370723.02330414","13":"NA","14":"756814878.20224702"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
-  </script>
-</div>
-
-```r
 colnames(df1) %>% dput()
 ```
 
@@ -322,6 +296,7 @@ m_yeareffect <- df3 %>%
 
 ggplot(m_yeareffect, aes(Variable, statistic, fill = factor(p.value < 0.05))) +
          geom_col() +
+  theme(axis.title.x = element_text(size = 4)) +
   coord_flip()
 ```
 
@@ -330,6 +305,14 @@ ggplot(m_yeareffect, aes(Variable, statistic, fill = factor(p.value < 0.05))) +
 ```r
 #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2))
 ```
+## 3. Hydrography
+
+```r
+load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
+Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
+Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+```
+
 
 
 
