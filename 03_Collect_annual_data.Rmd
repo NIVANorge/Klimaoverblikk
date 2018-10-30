@@ -113,12 +113,20 @@ df3 <- df2 %>%
   arrange(StVarQuarter, Year)
 ```
 
-### e. Test regression of every station / varibale / quarter
+### e. Test regression of every station / variable / quarter
 ```{r, fig.height = 18}
 get_reg_coef <- function(df) {
   lm <- lm(Mean ~ Year, data = df)
-  subset(tidy(lm), term == "Year")
+  result <- subset(tidy(lm), term == "Year")
+  # browser()
+  result$Meanvalue <- mean(df$Mean)
+  result$Perc_change_per_decade <- with(result, statistic/Meanvalue*10*100)
+  result
   }
+
+# Test
+# get_reg_coef(df3 %>% filter(StVarQuarter %in% "Dram_DisTot_2" & !is.na(Mean)))
+
 
 m_yeareffect <- df3 %>%
   filter(!is.na(Mean)) %>%
@@ -151,8 +159,27 @@ substr_mid <- function(txt, n_start, n_to_remove){
   substr(txt, n_start, nchar(txt) - n_to_remove)
 }
 
-substr_right("abcd", 2)
-substr_left(c("abcd", "abcdefgh"), 2)
+# Sorts a character vector as the first 
+sort_char_as_num <- function(txt){
+  num <- stringr::str_extract(txt, "([^[[:blank:]]]+)")  %>% as.numeric()
+  txt[order(num)]
+}
+
+# Test
+# sort(c("10 %", "5 %", "20 %"))              # ordinary sort:    "10 %" "20 %" "5 %"
+# sort_char_as_num(c("10 %", "5 %", "20 %"))  # sort_char_as_num: "5 %"  "10 %" "20 %"
+
+factorlevels_from_num <- function(txt){
+  factor(txt, levels = sort_char_as_num(unique(txt)))
+  }
+
+# Test
+# substr_right("abcd", 2)
+# substr_left(c("abcd", "abcdefgh"), 2)
+# substr_mid(c("abcd", "abcdefgh"), 2, 2)
+
+# quantile(m_yeareffect$Perc_change_per_decade)  %>% round(1)
+# quantile(m_yeareffect$Perc_change_per_decade %>% abs())  %>% round(1)
 
 # Make new data set as we need Quarter as a separate variable in the plot.
 # Also we want to plot in the order of Variable_River, not River_Variable (keep each variable together in plot)
@@ -166,13 +193,30 @@ df <- m_yeareffect %>%
                      statistic < 0 & p.value > 0.05 ~ "Decrease (P > 0.05)",
                      statistic > 0 & p.value > 0.05 ~ "Increase (P > 0.05)",
                      statistic > 0 & p.value < 0.05 ~ "Increase (P < 0.05)")
-  )
-gg <- ggplot(df, aes(Quarter, Variable_River, size = abs(statistic), color = Slope_category)) +
+  ) %>%
+  mutate(Perc_change_category = 
+           case_when(Perc_change_per_decade < 0.5 ~ "0 - 0.5 %",
+                     Perc_change_per_decade >= 0.5 &  Perc_change_per_decade < 1 ~ "0.5 - 1 %",
+                     Perc_change_per_decade >= 1 &  Perc_change_per_decade < 2 ~ "1 - 2 %",
+                     Perc_change_per_decade >= 2 &  Perc_change_per_decade < 10 ~ "2 - 10 %",
+                     Perc_change_per_decade >= 10 &  Perc_change_per_decade < 20 ~ "10 - 20 %") 
+  )  %>%
+  mutate(Perc_change_category = factorlevels_from_num(Perc_change_category))
+
+
+xtabs(~Perc_change_category, df)
+
+gg1 <- ggplot(df, aes(Quarter, Variable_River, size = abs(Perc_change_per_decade), color = Slope_category)) +
   geom_point() +
-  scale_size_continuous("Change over time", range = c(1, 10)) +
+  scale_size_continuous("% change per decade", breaks = c(0, 1, 2, 5, 10, 20)) +
   scale_color_manual("Statistical significance", values = c("darkblue", "lightblue", "pink", "red3"))
-gg
+# gg1
   
+gg2 <- ggplot(df, aes(Quarter, Variable_River, size = Perc_change_category, color = Slope_category)) +
+  geom_point() +
+  scale_size_manual("% change per decade", values = 3:8) +
+  scale_color_manual("Statistical significance", values = c("darkblue", "lightblue", "pink", "red3"))
+gg2
 ```
 
 
