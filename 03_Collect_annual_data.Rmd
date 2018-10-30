@@ -1,0 +1,138 @@
+---
+title: "03 Collect data for time trend analysis"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged   
+---
+
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(broom)
+# library(pander)
+```
+
+## 1. Folders and files    
+Content of folders (see code)  
+```{r}
+dir("Datasett")
+dir("Datasett/River data (from OKA)")
+dir("Datasett/hydrografi")
+dir("Datasett/Bløtbunn")
+dir("Datasett/hardbunn_kopi")
+dir("Datasett/Plankton")
+```
+
+## 2. River data   
+Content of folders (see code)
+```{r}
+dir("Datasett/River data (from OKA)/Annual mean flows")
+dir("Datasett/River data (from OKA)/Monthly loads")
+dir("Datasett/River data (from OKA)/Concentrations (individual samples)")
+dir("Datasett/River data (from OKA)/Monthly flow-weighted concentrations")
+```
+
+### a. Data; example: Storelva loads
+```{r}
+df1 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx")  
+
+df2 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Gjerstadelva_Nidelva_monthly loads.xlsx")  
+
+df3 <- read_excel("Datasett/River data (from OKA)/Monthly loads/RIDx5_monthly loads.xlsx")  
+
+head(df1, 3)
+head(df2, 3)
+head(df3, 3)
+
+colnames(df1) %>% dput()
+colnames(df2) %>% dput()
+colnames(df3) %>% dput()
+
+df <- bind_rows(df1[-1,], df2[-1,], df3[-1,])
+
+# colnames(df) %>% dput()
+vars <- c("TrspTot TOTN", "TrspTot NO3-N", "TrspTot NH4-N", "TrspTot TOTP", 
+          "TrspTot TOC", "TrspTot ALK", "TrspTot Ca", "DisTot")
+for (var in vars)
+  df[[var]] <- as.numeric(df[[var]])
+df$Time <- with(df, lubridate::ymd(paste(Year, Month, "15")))
+
+# Add "_" in column names (TrspTot Ca -> TrspTot_Ca)
+colnames(df) <- sub(" ", "_", colnames(df), fixed = TRUE)
+
+tb <- df %>% 
+  gather("Variable", Value, TrspTot_TOTN:DisTot) %>%
+  filter(!is.na(Value)) %>%
+  xtabs(~Station_name + Variable, .)
+tb
+
+```
+
+### b, Plot seasonal cycle
+```{r}
+gg <- df %>%
+  gather("Variable", "Value",  TrspTot_TOTN:DisTot) %>%
+  group_by(Station_name, Variable, Month) %>%
+  summarise(Mean = mean(Value, na.rm = TRUE), Min = min(Value, na.rm = TRUE), Max = max(Value, na.rm = TRUE)) %>%
+  ggplot(., aes(Month, Mean)) + 
+    geom_ribbon(aes(ymin = Min, ymax = Max), fill = "lightgreen") +
+    geom_line() + geom_point() +
+    facet_grid(Variable~Station_name, scales = "free_y")
+gg
+```
+
+### c. Quarterly means of all variables
+```{r}
+df2 <- df %>%
+  mutate(Quarter = case_when(
+    Month %in% 1:3 ~ 1,
+    Month %in% 4:6 ~ 2,
+    Month %in% 7:9 ~ 3,
+    Month %in% 10:12 ~ 4
+  )) %>%
+  gather("Variable", "Value",  TrspTot_TOTN:DisTot) %>%
+  group_by(Station_name, Variable, Year, Quarter) %>%
+  summarise(Mean = mean(Value, na.rm = TRUE), Min = min(Value, na.rm = TRUE), Max = max(Value, na.rm = TRUE))
+
+```
+
+### d. Make quarterly site-specific variables
+```{r}
+df3 <- df2 %>%
+  unite("VarQuarter", Variable, Quarter) %>%
+  mutate(Station_short = substr(Station_name, 1, 4)) %>%
+  unite("StVarQuarter", Station_short, VarQuarter) %>%
+  arrange(StVarQuarter, Year)
+```
+
+### e. Test regression of every station / varibale / quarter
+```{r, fig.height = 15}
+get_reg_coef <- function(df) {
+  lm <- lm(Mean ~ Year, data = df)
+  subset(tidy(lm), term == "Year")
+  }
+
+m_yeareffect <- df3 %>%
+  filter(!is.na(Mean)) %>%
+  group_by(StVarQuarter) %>%
+  mutate(N_year = n()) %>%
+  filter(N_year >= 10) %>%
+  split(.$StVarQuarter) %>%
+  map_df(~get_reg_coef(.), .id = "Variable")
+
+ggplot(m_yeareffect, aes(Variable, statistic, fill = factor(p.value < 0.05))) +
+         geom_col() +
+  coord_flip()
+
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2))
+```
+
+
+
