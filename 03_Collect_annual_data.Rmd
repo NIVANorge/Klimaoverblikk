@@ -103,6 +103,7 @@ df2 <- df %>%
 
 ```
 
+
 ### d. Make quarterly site-specific variables
 ```{r}
 df3 <- df2 %>%
@@ -134,13 +135,44 @@ ggplot(m_yeareffect, aes(Variable, statistic, fill = factor(p.value < 0.05))) +
 
 #   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2))
 ```
-## 3. Hydrography
-```{r}
-load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
-Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
-Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+
+### f. Regression results, alternative plot
+```{r, fig.width = 6, fig.height = 12}
+
+# Helper functions
+substr_right <- function(txt, n){              # n = no. of characters to extract from the right
+  substr(txt, nchar(txt) - n + 1, nchar(txt))
+}
+substr_left <- function(txt, n_to_remove){     # n_to_remove = no. of characters to remove from the right
+  substr(txt, 1, nchar(txt) - n_to_remove)
+}
+
+substr_mid <- function(txt, n_start, n_to_remove){ 
+  substr(txt, n_start, nchar(txt) - n_to_remove)
+}
+
+substr_right("abcd", 2)
+substr_left(c("abcd", "abcdefgh"), 2)
+
+# Make new data set as we need Quarter as a separate variable in the plot.
+# Also we want to plot in the order of Variable_River, not River_Variable (keep each variable together in plot)
+df <- m_yeareffect %>%
+  mutate(Quarter = substr_right(Variable, 1), 
+         River_Variable = substr_left(Variable, 2),
+         Variable2 = substr_mid(Variable, 6, 2),
+         Variable_River = paste0(Variable2, "_", substr(Variable, 1, 4))) %>%
+  mutate(Slope_category = 
+           case_when(statistic < 0 & p.value < 0.05 ~ "Decrease (P < 0.05)",
+                     statistic < 0 & p.value > 0.05 ~ "Decrease (P > 0.05)",
+                     statistic > 0 & p.value > 0.05 ~ "Increase (P > 0.05)",
+                     statistic > 0 & p.value < 0.05 ~ "Increase (P < 0.05)")
+  )
+gg <- ggplot(df, aes(Quarter, Variable_River, size = abs(statistic), color = Slope_category)) +
+  geom_point() +
+  scale_size_continuous("Change over time", range = c(1, 10)) +
+  scale_color_manual("Statistical significance", values = c("darkblue", "lightblue", "pink", "red3"))
+gg
+  
 ```
-
-
 
 
