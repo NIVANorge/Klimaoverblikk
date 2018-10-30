@@ -78,7 +78,7 @@ gg
 ```{r}
 df <- read_excel("Datasett/River data (from OKA)/Annual mean flows/Mean annual flow.xlsx")
 # df <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx", skip = 1)  
-# summary(df)
+ summary(df)
 
 df <- as.data.frame(df)[-1,]
 colnames(df) <- sub(" ", "_", colnames(df), fixed = TRUE)
@@ -87,7 +87,8 @@ vars <- c("DisMean")
 for (var in vars)
   df[,var] <- as.numeric(df[,var])
 
-ggplot(df, aes(Year, DisMean)) + geom_line() + facet_wrap(~Station_name)
+# Flow
+ggplot(df, aes(Year, DisMean)) + geom_line() + facet_wrap(~Station_name) + labs (y = "Annual mean flow")
 
 ```
 
@@ -210,14 +211,25 @@ df %>%
 ### a. Data   
 * Note: deleted the empty second row manually, and one empty column 
 * Also copied the data (just the range with data, A1:V471) to a new sheet
+* NB! filter on depth to only include obs at 5m after 2000 (se below)
 ```{r}
 df <- read_excel("Datasett/Plankton/Planteplankton Arendal.xlsx") # range = "A1:V471"
 df$Year <- lubridate::year(df$Dato)
 df$Month <- lubridate::month(df$Dato)
 xtabs(~Year + Month, df)
+
+# They used depth profiles (0-30m) before 2000, after 2000 they mostly sampled at 5m, but there are some dates where there are profiles after 2000 as well. See more info in data description.
+df <- df %>% 
+  select(Dato:Month) %>%
+  filter(Dyp == "0-30 m" | Dyp == "5 m" | Dyp == "5m")
+
+str (df)
+summary (df)
+
 ```
 
 ### b. Plot time series of main groups
+
 ```{r, fig.height=3.5}
 df %>%
   gather("Group", "Value", Kiselalger:Flagellater) %>%
