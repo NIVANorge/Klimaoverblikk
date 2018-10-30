@@ -126,6 +126,13 @@ Df.Arendal %>%
 
 ## 4. Soft bottom fauna  
 ### a. Data
+
+# tips fra Hilde om plot å inkludere: 
+# 1. ant arter + ant individer vs tid
+# indekser vs tid (NB aggregere for år, ulike grabs) 
+# species (10% most abundant) vs. tid (NB. artene med flest individer er ofte de opportunistiske/eutrofirelaterte. interessant også å se trender i mindre vanlige arter)
+
+
 ```{r}
 df_blot_b35 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B35_artsliste")
 colnames(df_blot_b35)[1] <- "Species"
