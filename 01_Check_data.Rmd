@@ -129,25 +129,42 @@ Df.Arendal %>%
 ### a. Data
 
 # tips fra Hilde om plot å inkludere: 
-# 1. ant arter + ant individer vs tid
-# indekser vs tid (NB aggregere for år, ulike grabs) 
 # species (10% most abundant) vs. tid (NB. artene med flest individer er ofte de opportunistiske/eutrofirelaterte. interessant også å se trender i mindre vanlige arter)
 
 
 ```{r}
+# species list station B35
 df_blot_b35 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B35_artsliste")
 colnames(df_blot_b35)[1] <- "Species"
 
+# species list station B05
 df_blot_b05 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B05_artsliste")
 colnames(df_blot_b05)[1] <- "Species"
 
+# number of species and years
+cat("Number of species:", nrow(df_blot_b35), "\nNumber of years:", ncol(df_blot_b35), "\n")
+
+# indices and sediment parameters
 df_blot_ind <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "indekser_sedimentparametere")
 
-cat("Number of species:", nrow(df_blot_b35), "\nNumber of years:", ncol(df_blot_b35), "\n")
+str(df_blot_ind)
+
+# rename variables
+df_blot_ind <- rename (df_blot_ind, H = "H'", No.species = "No. species", No.ind = "No. ind.")
+
+# take mean of individual grabs pr year and station
+df_blot_ind <- df_blot_ind %>%
+  group_by(STAS, Year) %>%
+  summarise_at(vars (H:TOC_norm), funs (median))
+
+
+
 ```
 
-### b. Station B35, boxplot of the 10% most abundant species   
+### b. boxplot of the 10% most abundant species pr station
 ```{r}
+
+# station B35
 df <- df_blot_b35 %>%
   gather("Year", "N", -Species) %>%
   mutate(N = ifelse(is.na(N),0,N)) %>%
@@ -157,10 +174,60 @@ df <- df_blot_b35 %>%
 cat("Percentiles of median abundance per species:\n")
 quantile(df$Median_per_species, (0:10)/10, na.rm = TRUE)
 
-df %>%
+gg1 <- df %>%
   filter(Median_per_species >= 2) %>%
   ggplot(aes(Species, N)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+gg1
+
+# station B05
+df <- df_blot_b05 %>%
+  gather("Year", "N", -Species) %>%
+  mutate(N = ifelse(is.na(N),0,N)) %>%
+  group_by(Species) %>%
+  mutate(Median_per_species = median(N))
+
+cat("Percentiles of median abundance per species:\n")
+quantile(df$Median_per_species, (0:10)/10, na.rm = TRUE)
+
+# 
+gg2 <- df %>%
+  filter(Median_per_species >= 4) %>%
+  ggplot(aes(Species, N)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+gg2
+
+gg2
+
 ```
+
+### c. Plots of Indices and sediment parameters vs time
+```{r}
+str(df_blot_ind)
+
+# individual variables
+#ggplot(df_blot_ind, aes(Year, H, NQI1)) + geom_line() + facet_wrap(~STAS) 
+
+# several variables
+
+# species and indices. NB. need to change order...
+gg1 <- df_blot_ind %>%
+  gather("Variable", Value,  H:No.ind) %>%
+  ggplot(aes(Year, Value)) + 
+    geom_line() +
+    facet_grid(Variable~STAS, scales = "free_y")
+gg1
+
+#sediment parameters 
+# spike in TOC for B35 in 2014 real??
+gg2 <- df_blot_ind %>%
+  gather("Variable", Value, "%<63um":TOC) %>%
+  ggplot(aes(Year, Value)) + 
+    geom_line() +
+    facet_grid(Variable~STAS, scales = "free_y")
+gg2
+
+
+```
+
  
 ## 5. Hard-bottom fauna  
 ### a. Data (already chewed a bit on)
@@ -245,7 +312,7 @@ df %>%
   group_by(Year, Month, Group) %>%
   summarize(Value = mean(Value)) %>%
   filter(Month %in% c(2,4,6,8,10)) %>%
-  ggplot(aes(Year, Value)) +
+   ggplot(aes(Year, Value)) +
     geom_line() +
     facet_grid(Group~Month, scale = "free_y")
 ```
