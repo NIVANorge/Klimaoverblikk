@@ -78,6 +78,9 @@ transekt.df <- transekt.df %>%
 SiteSpec = reshape(transekt.df, idvar = c("Site", "Year"), timevar = "Species", direction = "wide")
 # names(SiteSpec)
 
+# velger kun stasjonene med lengre tidsserie (02.11.2018) 407 og 410
+SiteSpec = subset(SiteSpec, SiteSpec$Site %in% c("407", "410"))
+
 # Endrer navnene
 artsnavn = names(SiteSpec)[-c(1:2)]
 artsnavn = gsub("Value.", "", artsnavn)
@@ -104,6 +107,13 @@ ord1 <- decorana(spec.m)
 
 # Short output
 summary(ord1, display = "none")
+
+# Innledende NMDS - litt usikker på utfallet 
+ord2 <- metaMDS(spec.m)
+
+
+ord2
+
 ```
 ### e. Test plot 1
 ```{r}
@@ -120,10 +130,15 @@ points(ord1, display = "sites", pch = 21, col = "red", bg = "yellow")
 ```{r}
 # trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
 ord1.sites <- data.frame(scores(ord1, display = "sites"))
-
 ord1.df <- data.frame(SiteSpec[,c(1:2)], ord1.sites)
 
-str(ord1.df)
+#str(ord1.df)
+
+# NMDS
+# trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
+ord2.sites <- data.frame(scores(ord2, display = "sites"))
+ord2.df <- data.frame(SiteSpec[,c(1:2)], ord2.sites) 
+
 ```
 
 ### h. Redone plots done in 'Klimaoverblikk_hardbunn.Rmd'   
@@ -142,6 +157,35 @@ DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Yea
 
 DCAplot.1
 DCAplot.2
+
+# DCA aksene mot år
+DCAplot_3 <- ord1.df %>%
+  gather("DCA_axis", "Value", DCA1:DCA4) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~DCA_axis)
+
+DCAplot_3
+
+# Innledende NMDS
+
+# NMDS aksene mot hverandre, fargekodet for år
+NMDSplot_1 <- ggplot(ord2.df, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+
+NMDSplot_1
+
+# NMDS aksene mot år
+NMDSplot_2 <- ord2.df %>%
+  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~NMDS_axis)
+
+NMDSplot_2
 ```
 
 
@@ -174,11 +218,8 @@ df_long <- bind_rows(df_long_1, df_long_2) %>%
   select(Site, Year, Species, Value)
 
 str(df_long)
-
+head (df_long)
 # look at data
-#tb <- xtabs(~Depth + Month, Df.Arendal)
-#pandoc.table(tb, style = "rmarkdown")
-
 tb <- xtabs(~Year + Site, df_long)
 pandoc.table(tb, style = "rmarkdown")
 
@@ -190,35 +231,42 @@ Reshape to wide format the tidyr way (instead of using reshape()) - gives us nic
 SiteSpec <- df_long %>%
   spread(Species, Value)
 
-# artsmatrise
-spec.m = SiteSpec[, -c(1:2)]
+head(SiteSpec)
 
 # må erstatte NA med 0
-spec.m[is.na(spec.m)] = 0
+SiteSpec[is.na(SiteSpec)] = 0
 
-cat("Dimensions of 'spec.m':\n", dim(spec.m))
+# lager separate artsmatriser for de to ulike stasjonene (representerer ulike system)
+spec_05 <- filter (SiteSpec, Site == "B05")
+spec_35 <- filter (SiteSpec, Site == "B35")
 
-head (SiteSpec, 10)
-head (spec.m, 10)
+# artsmatrise, fjerner år og stasjon
+spec.m_05 = spec.m_05[, -c(1:2)]
+spec.m_35 = spec.m_35[, -c(1:2)]
+
+cat("Dimensions of 'spec.m_05':\n", dim(spec.m_05))
 
 ```
 
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
-ord1 <- decorana(spec.m)
+ord1_05 <- decorana(spec.m_05)
+ord1_35 <- decorana(spec.m_35)
 
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
 
 # Short output
-summary(ord1, display = "none")
+summary(ord1_05, display = "none")
+summary(ord1_35, display = "none")
 
 # Innledende NMDS - litt usikker på utfallet 
-ord2 <- metaMDS(spec.m)
+ord2_05 <- metaMDS(spec.m_05)
+ord2_35 <- metaMDS(spec.m_35)
 
- ord2
- 
+ord2_05
+ord2_35 
 
 ```
 ### e. Test plot 1
@@ -226,22 +274,29 @@ ord2 <- metaMDS(spec.m)
 # sorte sirkler er sites, røde pluss er arter
 
 # DCA
-plot(ord1) 
-
+plot(ord1_05) 
+plot(ord1_35) 
 # NMDS
-plot(ord2)
+plot(ord2_05)
+plot(ord2_35)
 
 ```
 
 ### f. Test plot 2
 ```{r}
 # DCA
-plot(ord1, display = "sites", type = "n")
-points(ord1, display = "sites", pch = 21, col = "red", bg = "yellow")
+plot(ord1_05, display = "sites", type = "n")
+points(ord1_05, display = "sites", pch = 21, col = "red", bg = "yellow")
+
+plot(ord1_35, display = "sites", type = "n")
+points(ord1_35, display = "sites", pch = 21, col = "red", bg = "yellow")
 
 # NMDS
-plot(ord2, display = "sites", type = "n")
-points(ord2, display = "sites", pch = 21, col = "red", bg = "yellow")
+plot(ord2_05, display = "sites", type = "n")
+points(ord2_05, display = "sites", pch = 21, col = "red", bg = "yellow")
+
+plot(ord2_35, display = "sites", type = "n")
+points(ord2_35, display = "sites", pch = 21, col = "red", bg = "yellow")
 
 ```
 
@@ -249,83 +304,78 @@ points(ord2, display = "sites", pch = 21, col = "red", bg = "yellow")
 ```{r}
 # DCA
 # trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
-ord1.sites <- data.frame(scores(ord1, display = "sites"))
+ord1_05.sites <- data.frame(scores(ord1_05, display = "sites"))
+ord1_05.df <- data.frame(spec_05[,c(1:2)], ord1_05.sites)
 
-ord1.df <- data.frame(SiteSpec[,c(1:2)], ord1.sites)
+ord1_35.sites <- data.frame(scores(ord1_35, display = "sites"))
+ord1_35.df <- data.frame(spec_35[,c(1:2)], ord1_35.sites)
 
-str(ord1.df)
+str(ord1_05.df)
+str(ord1_35.df)
+
+# legger DCA-aksene for de to stasjonene sammen igjen (etter at ordinasjon er gjort separat)
+ord1_both <- bind_rows(ord1_05.df, ord1_35.df)
 
 # NMDS
 # trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
-ord2.sites <- data.frame(scores(ord2, display = "sites"))
+ord2_05.sites <- data.frame(scores(ord2_05, display = "sites"))
+ord2_05.df <- data.frame(spec_05[,c(1:2)], ord2_05.sites) 
 
-ord2.df <- data.frame(SiteSpec[,c(1:2)], ord2.sites)
+ord2_35.sites <- data.frame(scores(ord2_35, display = "sites"))
+ord2_35.df <- data.frame(spec_35[,c(1:2)], ord2_35.sites)
+
+# legger NMDS-aksene for de to stasjonene sammen igjen (etter at ordinasjon er gjort separat)
+ord2_both <- bind_rows(ord2_05.df, ord2_35.df)
 
 ```
 
 ### h. Redone ggplots similar to 'Klimaoverblikk_hardbunn.Rmd'   
 ```{r}
-# Innledende DCA 
-DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
+
+# DCA aksene mot hverandre, fargekodet for år
+DCAplot_1 <- ggplot(ord1_both, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
   facet_wrap(~ Site, nrow=2) +
   labs(color = "År")
 
-DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
+DCAplot_2 <- ggplot(ord1_both, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
   facet_wrap(~ Site, nrow=2) +
   labs(color = "År")
 
-DCAplot.1
-DCAplot.2
+DCAplot_1
+DCAplot_2
 
-# Plotte akser mot tid
+# DCA aksene mot år
+DCAplot_3 <- ord1_both %>%
+  gather("DCA_axis", "Value", DCA1:DCA4) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~DCA_axis)
 
-DCAplot.3 <- ggplot(ord1.df, aes(Year, DCA1)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
+DCAplot_3
 
-DCAplot.4 <- ggplot(ord1.df, aes(Year, DCA2)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
+# Innledende NMDS
 
-DCAplot.5 <- ggplot(ord1.df, aes(Year, DCA3)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.6 <- ggplot(ord1.df, aes(Year, DCA4)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.3
-DCAplot.4
-DCAplot.5
-DCAplot.6
-
-# looks like DC1 captures the variation connected to differences between stations (Hilde emphasize that these are two different systems). DC2 looks to have a time component, but from plotting DC2 vs year (DCAplot.4), it is just in station B05. We need to discuss if the analyses should be done on the two stations separately, or is there a way to condition this in the decorana function?
-
-# Innledende NMDS 
-NMDSplot.1 <- ggplot(ord2.df, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
+# NMDS aksene mot hverandre, fargekodet for år
+NMDSplot_1 <- ggplot(ord2_both, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
   facet_wrap(~ Site, nrow=2) +
   labs(color = "År")
 
-NMDSplot.1
 
-# Plotte akser mot tid
+NMDSplot_1
 
-NMDSplot.2 <- ggplot(ord2.df, aes(Year, NMDS1)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
+# NMDS aksene mot år
+NMDSplot_2 <- ord2_both %>%
+  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~NMDS_axis)
 
-NMDSplot.3 <- ggplot(ord2.df, aes(Year, NMDS2)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
+NMDSplot_2
 
-NMDSplot.2
-NMDSplot.3
-
-# overall similar picture between the two methods. NMDS1 seems to capture station difference and NMDS2 time variation. But plotting NMDS2 vs Year there is a trend for both stations (and just one for DCA). Need to discuss how critical this difference is. should we test by running the ordinations on the stations separately, or do we then miss the point?
+# for both DCA and NMDS the time correlated changes in species comp seems to be captured by the first axis. Note that there is opposite directions for the two stations for DCA1, does that matter?  
 
 ```
 
