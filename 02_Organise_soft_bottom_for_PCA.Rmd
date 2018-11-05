@@ -188,6 +188,54 @@ NMDSplot_2 <- ord2.df %>%
 NMDSplot_2
 ```
 
+### i. FOR USE: Loading data from HBanalysesett.csv and plotting. Faster, and that way the NMDS-results won't be different each time the script is run  
+```{r}
+HBdata <- read.csv("Datasett/Hardbunn_KOPI/HBanalysesett.csv", sep=";", stringsAsFactors = FALSE, dec=",")
+HBdata_long <- subset(HBdata, HBdata$Site %in% c(407,410))
+
+# DCA - transektdata, fargekodet for år  
+DCAplot.1 <- ggplot(HBdata_long, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.2 <- ggplot(HBdata_long, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+DCAplot.1
+DCAplot.2
+
+# DCA aksene mot år
+DCAplot_3 <- HBdata_long %>%
+  gather("DCA_axis", "Value", DCA1:DCA4) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~DCA_axis)
+
+DCAplot_3
+
+# Innledende NMDS
+
+# NMDS aksene mot hverandre, fargekodet for år
+NMDSplot_1 <- ggplot(HBdata_long, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
+  geom_point() + 
+  facet_wrap(~ Site, nrow=2) +
+  labs(color = "År")
+
+
+NMDSplot_1
+
+# NMDS aksene mot år
+NMDSplot_2 <- HBdata_long %>%
+  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~NMDS_axis)
+
+NMDSplot_2
+```
 
 ## 2. Reorganise soft-bottom fauna data and test ordination
 ### a. Data
