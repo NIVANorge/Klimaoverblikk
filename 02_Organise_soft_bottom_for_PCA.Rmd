@@ -1,5 +1,5 @@
 ---
-title: "Organising soft-bottom data for PCA"
+title: "Ordinations for soft-bottom, hard-bottom and plankton data"
 output: 
   html_document:
     keep_md: true
