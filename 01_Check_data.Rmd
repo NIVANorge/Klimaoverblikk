@@ -238,9 +238,17 @@ gg2
 ```
 
  
-## 5. Hard-bottom fauna  
+## 5. Hard-bottom flora and fauna 
 
-### Guri kommenterer og legger inn forslag
+Guri kommenterer og legger inn forslag.
+
+***GSA:*** 
+* Vi kutter 416 og 417, siden tidsserien her var relativt kort. *(Data er fortsatt med i parametere utenom ordinasjonsaksene)*
+* Vi kutter strandsone og konsentrerer oss bare om transektdata også i ordinasjonene. Endret fra tidligere versjon av HBanalysesett.csv
+* I ordinasjonene er det både alger og dyr
+* Jeg skal forsøke å finne en god måte å plotte artsscorer sammen med punktene i DCA-plot slik at vi kan tolke ordinasjonsresultater også med tanke på hvilke arter som utgjør endringene i sammfunnsstruktur over tid (*to come*).
+* La til figuren fra hardbunnsskriptet over endringer i nedre voksedyp for de ni indeksartene (makroalger) over tid.
+
 
 ### a. Data (already chewed a bit on)
 ```{r}
@@ -276,7 +284,7 @@ df %>%
     facet_grid(Site~DCA_axis)
 ```
 
-### e. Plot species
+### e. Plot species - LGD - Nedre voksedyp
 ```{r, fig.width=9}
 df %>%
   gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
@@ -284,6 +292,27 @@ df %>%
   ggplot(aes(Year, Value)) +
     geom_line() +
     facet_grid(Site~Species)
+```
+#### Fjerna to stasjoner, snudd y-akse og plotta sammen. Bedre til visuell presentasjon.
+```{r LGD index species}
+
+df[df$Site %in% c(407, 410), ] %>%
+  gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
+  mutate(Species = sub("LDG.", "", Species)) %>%
+  ggplot(aes(Year, Value, color = as.character(Site))) +
+    geom_point() +
+    facet_wrap(~ Species, nrow=3) +
+    scale_y_reverse() +
+    labs(x = "", y= "Nedre voksedyp (m)", color = "Stasjon")
+
+
+df[df$Site %in% c(407, 410), ] %>%
+  gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
+  mutate(Species = sub("LDG.", "", Species)) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(Site~Species)
+
 ```
 
 ## 6. Phytoplankton
