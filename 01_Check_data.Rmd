@@ -242,12 +242,14 @@ gg2
 
 Guri kommenterer og legger inn forslag.
 
-***GSA:*** 
+***GSA comments:*** 
 * Vi kutter 416 og 417, siden tidsserien her var relativt kort. *(Data er fortsatt med i parametere utenom ordinasjonsaksene)*
 * Vi kutter strandsone og konsentrerer oss bare om transektdata også i ordinasjonene. Endret fra tidligere versjon av HBanalysesett.csv
 * I ordinasjonene er det både alger og dyr
 * Jeg skal forsøke å finne en god måte å plotte artsscorer sammen med punktene i DCA-plot slik at vi kan tolke ordinasjonsresultater også med tanke på hvilke arter som utgjør endringene i sammfunnsstruktur over tid (*to come*).
 * La til figuren fra hardbunnsskriptet over endringer i nedre voksedyp for de ni indeksartene (makroalger) over tid.
+* Har lagt til antall arter i gruppene rød-, grønn- og brunalger over tid
+** NB: Vi må snakke med Janne om hvor mye utbytting av personell over tid kan ha å si for resultatene!**
 
 
 ### a. Data (already chewed a bit on)
@@ -314,6 +316,19 @@ df[df$Site %in% c(407, 410), ] %>%
     facet_grid(Site~Species)
 
 ```
+### f. Plot number of species within algal groups
+***GSA comments:***
+* Probably makes more sense to plot porportions over time though!
+```{r Macroalgal groups}
+
+df[df$Site %in% c(407, 410), ] %>%
+  gather("Group", "Value", 36:39) %>%
+  ggplot(aes(Year, Value, color = as.character(Site))) +
+    geom_point() +
+    facet_wrap(~ Group) +
+    labs(x = "", y= "Antall arter", color = "Stasjon")
+```
+
 
 ## 6. Phytoplankton
 
