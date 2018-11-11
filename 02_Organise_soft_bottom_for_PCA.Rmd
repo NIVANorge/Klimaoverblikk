@@ -18,6 +18,7 @@ library(readxl)
 library(tidyverse)
 #install.packages("vegan")
 library(vegan)
+require(pander)
 ```
 
 ### Function for finding text in R files  
@@ -38,7 +39,7 @@ search_text <- function(string, dir = ".", extension = c("R","Rmd"), pattern = N
 
 ## 1. Check organisation/analysis of hard-bottom data from Guri's scripts   
 ### a. Content of folders (see code)  
-```{r}
+```{r, eval = FALSE}
 dir("Datasett/hardbunn_kopi")
 dir("Datasett/hardbunn_kopi/r workspace")
 #
@@ -52,7 +53,7 @@ Does not include ord1.df, which is used in 'Klimaoverblikk_hardbunn.Rmd', but do
 Order of Guri's scripts:  
 1) HBdata.R: HBdata -> Hbuse  
 2) HBOrdinasjon.R: Hbuse -> HBagg -> transekt.df -> SiteSpec -> spec.m -> ordinasjon -> ord1.df  
-```{r}
+```{r, eval = FALSE}
 load("Datasett/hardbunn_kopi/r workspace/.RData")
 
 # Let us delete everything except transekt.df
@@ -65,9 +66,9 @@ str(transekt.df)
 ### c. Create data for ordination ('spec.m') and perform ordination   
 From Guri's code in 'HBOrdinasjon.R', except the first part     
 * 'transekt.df' is in 'long format'  
-* Is reshaped to broad format ('SiteSpec'). *Note* that this one is later combined with PCA output to create 'ord1.df'   
+* Is reshaped to broad format ('SiteSpec'). *Note* that this one is later combined with DCA output to create 'ord1.df'   
 * For the ordination, the year and site columns are removed and NA -> 0 ('spec.m')   
-```{r, warning=FALSE}
+```{r, eval = FALSE}
 # table(transekt.df$Sitename)
 transekt.df <- transekt.df %>%
   mutate(Site = substr(Sitename, 1,3), Year = as.numeric(substr(Sitename, 5,8))) %>%
@@ -98,9 +99,9 @@ cat("Dimensions of 'spec.m':\n", dim(spec.m))
 ```
 
 ### d. Perform ordination
-```{r}
+```{r, eval = FALSE}
 # Transekt
-ord1 <- decorana(spec.m)
+ord1 <- decorana(spec.m, iweigh = 1) # vekter ned sjeldne arter
 
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
@@ -116,18 +117,18 @@ ord2
 
 ```
 ### e. Test plot 1
-```{r}
+```{r, eval = FALSE}
 plot(ord1) # sorte sirkler er sites, røde pluss er arter
 ```
 
 ### f. Test plot 2
-```{r}
+```{r, eval = FALSE}
 plot(ord1, display = "sites", type = "n")
 points(ord1, display = "sites", pch = 21, col = "red", bg = "yellow")
 ```
 
 ### g. Make data set for the plots done in 'Klimaoverblikk_hardbunn.Rmd'  
-```{r}
+```{r, eval = FALSE}
 # trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
 ord1.sites <- data.frame(scores(ord1, display = "sites"))
 ord1.df <- data.frame(SiteSpec[,c(1:2)], ord1.sites)
@@ -143,7 +144,7 @@ ord2.df <- data.frame(SiteSpec[,c(1:2)], ord2.sites)
 
 ### h. Redone plots done in 'Klimaoverblikk_hardbunn.Rmd'   
 * *BUT* they look a bit different... so the input data are probably not identical  
-```{r}
+```{r, eval = FALSE}
 # Innledende DCA - litt usikker på utfallet  
 DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
@@ -227,15 +228,93 @@ NMDSplot_1 <- ggplot(HBdata_long, aes(NMDS1, NMDS2, color = as.numeric(as.charac
 
 NMDSplot_1
 
-# NMDS aksene mot år
-NMDSplot_2 <- HBdata_long %>%
-  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
-  ggplot(aes(Year, Value)) +
-    geom_line() +
-    facet_grid(Site~NMDS_axis)
-
-NMDSplot_2
 ```
+### j. Species in relation to ordination
+```{r DCA-species, fig.height = 12, fig.width = 6}
+# Arter ift DCA 
+ord.alger <- read.csv("Datasett/Hardbunn_KOPI/HB_AlgerORD.csv", sep=";", stringsAsFactors = FALSE, dec=",")
+ord.dyr <- read.csv("Datasett/Hardbunn_KOPI/HB_DyrORD.csv", sep=";", stringsAsFactors = FALSE, dec=",")
+
+# boundaries
+bound.alger <- quantile(ord.alger$DCA1, probs = c(0.1, 0.9))
+bound.dyr <- quantile(ord.dyr$DCA1, probs = c(0.1, 0.9))
+
+# subset on boundaries
+ord.sub.alger <- ord.alger[ord.alger$DCA1 <= bound.alger[[1]] |ord.alger$DCA1 >= bound.alger[[2]], ]
+ord.sub.dyr   <- ord.dyr[ord.dyr$DCA1 <= bound.dyr[[1]] |ord.dyr$DCA1 >= bound.dyr[[2]], ]
+
+# subset on boundaries for site scores (subjective)
+ord.year.alger <- ord.alger[ord.alger$DCA1 >= -0.8 & ord.alger$DCA1 <= -0.3 |ord.alger$DCA1 >= 0.3 & ord.alger$DCA1 <= 0.8, ]
+ord.year.dyr <- ord.dyr[ord.dyr$DCA1 >= -0.8 & ord.dyr$DCA1 <= -0.3 |ord.dyr$DCA1 >= 0.3 & ord.dyr$DCA1 <= 0.8, ]
+
+# alger 90 tallet vs nå
+ggplot(ord.year.alger, aes(x = IDnavn, y = DCA1, color = CAT2)) + 
+  geom_point(size=3) +   # Draw points
+  scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), guide = guide_legend(title = "")) + # choose colors
+  geom_segment(aes(   x = IDnavn, 
+                   xend = IDnavn, 
+                      y = min(DCA1), 
+                   yend = max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Makroalger vs DCA1", 
+       caption="source: Alger (DCA [-0.8,-0.2] (90-tallet) DCA [0.2,0.8] (nå))",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+
+# dyr 90 tallet vs nå
+ggplot(ord.year.dyr, aes(x=IDnavn, y=DCA1, color = CAT2)) + 
+  geom_point(size=3) +   # Draw points
+  scale_colour_brewer(palette = "Set2", guide = guide_legend(title = "")) + # choose colors
+  geom_segment(aes(x=IDnavn, 
+                   xend=IDnavn, 
+                   y=min(DCA1), 
+                   yend=max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+
+  labs(title="Dyr vs DCA1", 
+       caption="source: Alger (DCA [-0.8,-0.2] (90-tallet) DCA [0.2,0.8] (nå))",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+
+# alger ekstremer
+ggplot(ord.sub.alger, aes(x = IDnavn, y = DCA1, color = CAT2)) + 
+  geom_point(size=3) +   # Draw points
+  scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), guide = guide_legend(title = "")) + # choose colors
+  geom_segment(aes(   x = IDnavn, 
+                      xend = IDnavn, 
+                      y = min(DCA1), 
+                      yend = max(DCA1)),  
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Makroalger vs DCA1", 
+       caption="source: Alger (høyeste og laveste 10 % av DCA-verdier)",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+
+# dyr ekstremer
+ggplot(ord.sub.dyr, aes(x=IDnavn, y=DCA1, color = CAT2)) + 
+  geom_point(size=3) +   # Draw points
+  scale_colour_brewer(palette = "Set2", guide = guide_legend(title = "")) + # choose colors
+  geom_segment(aes(x=IDnavn, 
+                   xend=IDnavn, 
+                   y=min(DCA1), 
+                   yend=max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  
+  labs(title="Dyr vs DCA1", 
+       caption="source: Dyr (høyeste og laveste 10 % av DCA-verdier)",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+```
+Arters "optimum" (vid tolkning) langs DCA-aksen. Sier noe om hvor man mest sannsynlig finner de ulike artene. Har plottet arter som ligger i området der punktene fra tidlig 90-tall og nåtid befinner seg. Har også plottet ekstremene. (Legg derfor merke til skala på DCA1)
+
 
 ## 2. Reorganise soft-bottom fauna data and test ordination
 ### a. Data
@@ -289,8 +368,8 @@ spec_05 <- filter (SiteSpec, Site == "B05")
 spec_35 <- filter (SiteSpec, Site == "B35")
 
 # artsmatrise, fjerner år og stasjon
-spec.m_05 = spec.m_05[, -c(1:2)]
-spec.m_35 = spec.m_35[, -c(1:2)]
+spec.m_05 = spec_05[, -c(1:2)]
+spec.m_35 = spec_35[, -c(1:2)]
 
 cat("Dimensions of 'spec.m_05':\n", dim(spec.m_05))
 
