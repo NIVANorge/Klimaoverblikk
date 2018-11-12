@@ -33,9 +33,11 @@ dir("Datasett/Plankton")
 
 ## 2. River data   
 
-### Dag: Relevante variabler for plot og test av tidsserie:
-# Bruke datasettene med monthly and annual loads, og spesielt variablene Discarge (DisTot) og transport av inorg N (NO3+NO4), PO4, TotN, TotP, TOC og SPM. Alkalinitet og calcium er kun for sur nedbør elvene (Nidelva, Storelva og Gjerstadelva), og kan vi kanskje heller komme tilbake til.
-# aggregering: i sesong (som du jo har startet på allerede), er det også mulig å hente ut mnd for vårflom, slik som mnd for våroppblomstring? Dette vil jo sikkert variere for stasjonene (?), men interessant å se om når vårflommen intreffer har endret seg, og om det evn har noen effekt på spesielt hardbunn.
+***Helene comments:*** 
+* Relevante variabler for plot og test av tidsserie:
+* Bruke datasettene med monthly and annual loads, og spesielt variablene Discarge (DisTot) og transport av inorg N (NO3+NO4), PO4, TotN, TotP, TOC og SPM. Alkalinitet og calcium er kun for sur nedbør elvene (Nidelva, Storelva og Gjerstadelva), og kan vi kanskje heller komme tilbake til.
+*dropp Otra (som jo er "nedstrøms" fra Arendal)
+* aggregering: i sesong (som du jo har startet på allerede), er det også mulig å hente ut mnd for vårflom, slik som mnd for våroppblomstring? Dette vil jo sikkert variere for stasjonene (?), men interessant å se om når vårflommen intreffer har endret seg, og om det evn har noen effekt på spesielt hardbunn.
 
 Content of folders (see code)
 ```{r}
@@ -99,8 +101,10 @@ ggplot(df, aes(Year, DisMean)) + geom_line() + facet_wrap(~Station_name) + labs 
 
 ## 3. Hydrografi  
 
-### Dag (du kjenner jo disse dataene også godt): egentlig interessant å se på plot og trender av alle disse variablene over tid...
-# aggregering: sesong og årlig, OG i 3 dybdelag: surface 0-10m, intermediate 20-30m, deep 50-75.
+
+***Helene comments:*** 
+* Dag (du kjenner jo disse dataene også godt): egentlig interessant å se på plot og trender av alle disse variablene over tid...
+* aggregering: sesong og årlig, OG i 3 dybdelag: surface 0-10m, intermediate 20-30m, deep 50-75.
 
 ### a. Data  
 Tables of coverages of depth and seasons  
@@ -137,8 +141,9 @@ Df.Arendal %>%
 ## 4. Soft bottom fauna  
 ### a. Data
 
-### Dag: plot og test av trend spesielt relevant for No.species, No.ind, NQI1, H, TOC (alle i df_blot_ind), har laget noen plot i pkt c under. 
-# diskuterte litt med Guri om hvordan vi evn skal plotte trender i artsammensetning (artslistene) over tid, dette går jo inn i ordinasjonsanalysen, og Guri mente det kanskje var best (hvertfall for hardbunn) å heller hente ut tidskorrelerte endringer i artsammensetning fra DCA1-aksen. Men hvis du har noen forslag til hvordan vi vi ellers kan plotte dette fra artslistene direkte, så kjør på! Hilde poengterte at for bløtbunn så er artene artene med flest individer ofte de opportunistiske/eutrofirelaterte, og fra klimaperspektiv er det også interessant også å se trender i mindre vanlige arter...
+***Helene comments:*** 
+* plot og test av trend spesielt relevant for No.species, No.ind, NQI1, H, TOC (alle i df_blot_ind), har laget noen plot i pkt c under. 
+* diskuterte litt med Guri om hvordan vi evn skal plotte trender i artsammensetning (artslistene) over tid, dette går jo inn i ordinasjonsanalysen, og Guri mente det kanskje var best (hvertfall for hardbunn) å heller hente ut tidskorrelerte endringer i artsammensetning fra DCA1-aksen. 
 
 
 ```{r}
@@ -240,7 +245,6 @@ gg2
  
 ## 5. Hard-bottom flora and fauna 
 
-Guri kommenterer og legger inn forslag.
 
 ***GSA comments:*** 
 * Vi kutter 416 og 417, siden tidsserien her var relativt kort. *(Data er fortsatt med i parametere utenom ordinasjonsaksene)*
@@ -332,8 +336,9 @@ df[df$Site %in% c(407, 410), ] %>%
 
 ## 6. Phytoplankton
 
-### Dag: du kjenner jo disse dataene også godt. Vi har jo bare dataene aggregert til klasser og grupper (altså ikke fulle artslister). du har jo allerede plottet tidsserier for gruppene (det holder kanskje?), og teste trend over tid i disse?
-# aggregering: sesong, og hente ut artsammensetning ved maks chla på våren til ordinasjon. Plottene du hadde gjort tidligere viser jo dette med at høstoppblomstringer ser ut til å ha forsvunnet. 
+***Helene comments:*** 
+* du kjenner jo disse dataene også godt. Vi har jo bare dataene aggregert til klasser og grupper (altså ikke fulle artslister). du har jo allerede plottet tidsserier for gruppene (det holder kanskje?), og teste trend over tid i disse?
+* aggregering: sesong, og hente ut artsammensetning ved maks chla på våren til ordinasjon. Plottene du hadde gjort tidligere viser jo dette med at høstoppblomstringer ser ut til å ha forsvunnet. 
 
 ### a. Data   
 * Note: deleted the empty second row manually, and one empty column 
