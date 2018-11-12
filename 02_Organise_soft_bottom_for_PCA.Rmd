@@ -437,8 +437,16 @@ ord1_05.df <- data.frame(spec_05[,c(1:2)], ord1_05.sites)
 ord1_35.sites <- data.frame(scores(ord1_35, display = "sites"))
 ord1_35.df <- data.frame(spec_35[,c(1:2)], ord1_35.sites)
 
+# trekker ut species scores så de kan relateres til aksene
+ord1_05.species <- data.frame(scores(ord1_05, display = "species"))
+ord1_05.species$Art = rownames(ord1_05.species)
+ord1_35.species <- data.frame(scores(ord1_35, display = "species"))
+ord1_35.species$Art = rownames(ord1_35.species)
+
 str(ord1_05.df)
 str(ord1_35.df)
+str(ord1_05.species)
+str(ord1_35.species)
 
 # legger DCA-aksene for de to stasjonene sammen igjen (etter at ordinasjon er gjort separat)
 ord1_both <- bind_rows(ord1_05.df, ord1_35.df)
@@ -506,6 +514,52 @@ NMDSplot_2
 
 ```
 
+```{r, fig.height = 16, fig.width = 6}
+# boundaries
+bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.1, 0.9))
+bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
+
+# subset on boundaries
+bound_05.sub <- ord1_05.species[ord1_05.species$DCA1 <= bound_05[[1]] |ord1_05.species$DCA1 >= bound_05[[2]], ]
+bound_35.sub <- ord1_35.species[ord1_35.species$DCA1 <= bound_35[[1]] |ord1_35.species$DCA1 >= bound_35[[2]], ]
+
+# hvor eventuelt subjektive skiller for å dele opp årsperioder skal gå bør nok fagansvarlig vurdere (dersom det trengs i tolkningene vel og merke)
+
+# disse blir litt mer komplisert dersom vi deler opp i grupper
+BBartOrd_05 <- 
+  ggplot(bound_05.sub, aes(x = Art, y = DCA1)) + 
+  geom_point(size=3) +   # Draw points
+  geom_segment(aes(   x = Art, 
+                   xend = Art, 
+                      y = min(DCA1), 
+                   yend = max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Bløtbunnsorganismer vs DCA1", 
+       caption="source: Stasjon 05 (høyeste og laveste 5 % av DCA-verdier)",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+
+BBartOrd_35 <- 
+  ggplot(bound_35.sub, aes(Art, DCA1)) + 
+  geom_point(size=3) +   # Draw points
+  geom_segment(aes(   x = Art, 
+                   xend = Art, 
+                      y = min(DCA1), 
+                   yend = max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Bløtbunnsorganismer vs DCA1", 
+       caption="source: Stasjon 35 (høyeste og laveste 5 % av DCA-verdier)",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+
+BBartOrd_35
+BBartOrd_05
+
+```
 
 
 ## 3. Reorganise phytoplankton data and test ordination
