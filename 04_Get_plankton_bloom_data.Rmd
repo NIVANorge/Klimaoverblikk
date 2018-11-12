@@ -1,0 +1,177 @@
+---
+title: "Extract spring bloom phytoplankton data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)   # yday() for day-of-year
+```
+
+
+## 1. Data
+### a. Read hydrography data
+```{r}
+load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
+Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
+Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+
+Df.Arendal$Date <- ymd_hms(paste(Df.Arendal$Dato, "00:00:00"))   # R's date format
+```
+
+### b. Read plankton data
+```{r}
+df_plank <- read_excel("Datasett/Plankton/Planteplankton Arendal.xlsx") # range = "A1:V471"
+df_plank$Year <- lubridate::year(df_plank$Dato)
+df_plank$Month <- lubridate::month(df_plank$Dato)
+```
+
+### c. Plankton: Select by depth  
+0-30 or 5 m  
+```{r}
+xtabs(~Dyp, df_plank)
+
+# Select
+sel <- df_plank$Dyp %in% c("0-30 m", "5 m", "5m"); 
+df_plank <- df_plank[sel,]
+
+# Stats
+cat("Select", sum(sel), "lines\n")
+cat(mean(sel)*100, "% of the data")
+```
+
+## 2. Plot ChlA
+### a. All year
+```{r}
+Df.Arendal %>%
+  filter(Depth %in% 5) %>%
+  mutate(Decade = paste0(10*floor(Year/10), "s")) %>%
+  ggplot(aes(yday(Date), Klorofyll, group = Year, color = factor(Year))) + 
+    geom_line() +
+    facet_wrap(~Decade)
+```
+
+### b. Spring (January - May)
+```{r}
+Df.Arendal %>%
+  filter(Depth %in% 5 & Month %in% 1:5) %>%
+  mutate(Decade = paste0(10*floor(Year/10), "s")) %>%
+  ggplot(aes(yday(Date), Klorofyll, group = Year, color = factor(Year))) + 
+    geom_line() +
+    facet_grid(Decade~.)
+```
+### c. Spring (January - May) log-scale
+```{r}
+yday_1feb <- yday(ymd(20010201))
+yday_30apr <- yday(ymd(20010430))
+Df.Arendal %>%
+  filter(Depth %in% 5 & Month %in% 1:5) %>%
+  mutate(Decade = paste0(10*floor(Year/10), "s")) %>%
+  ggplot(aes(yday(Date), Klorofyll, group = Year, color = factor(Year))) + 
+    geom_line() +
+    geom_vline(xintercept = c(yday_1feb, yday_30apr)) +
+    scale_y_log10() +
+    facet_grid(Decade~.)
+```
+
+ 
+### d. Max chlorophyll February-April and February-May
+```{r}
+df <- Df.Arendal %>%
+  filter(Depth %in% 5) %>% 
+  group_by(Year) %>%
+  summarize(FebApr = max(Klorofyll[Month %in% 2:4], na.rm = TRUE),
+            FebMay = max(Klorofyll[Month %in% 2:5], na.rm = TRUE))
+df %>%
+  gather("Period", "Chla_max", FebApr, FebMay) %>%
+  ggplot(aes(Year, Chla_max, color = Period)) + 
+  geom_line()
+cat("Lowest max value Feb-April:", min(df$FebApr), "\n")
+```
+
+## 3. Get bloom periods to use  
+### a. Bloomperiod_01: Chl a over absolute threshold  
+```{r}
+threshold <- 1.1
+Bloomperiod_01 <- Df.Arendal %>%
+  filter(Depth %in% 5 & Month %in% 2:4 & Klorofyll >= threshold & !is.na(Klorofyll)) %>% 
+  group_by(Year) %>%
+  summarize(Date1 = min(Date), Date2 = max(Date))
+```
+
+### b. Plot periods
+```{r}
+df <- Df.Arendal %>%
+  filter(Depth %in% 5 & Month %in% 1:5) %>%
+  mutate(Decade = paste0(10*floor(Year/10), "s")) %>%
+  mutate(Bloomperiod = Month %in% 2:4 & Klorofyll >= threshold & !is.na(Klorofyll))
+ggplot(df, aes(yday(Date), Klorofyll, group = Year, color = factor(Year))) + 
+    geom_line() +
+    geom_point(data = df %>% filter(Bloomperiod), size = rel(3)) +
+    geom_vline(xintercept = c(yday_1feb, yday_30apr)) +
+    scale_y_log10() +
+    facet_grid(Decade~.)
+ggplot(df, aes(yday(Date), Klorofyll, group = Year, color = factor(Year), size = Bloomperiod)) + 
+    geom_line() +
+    scale_size_manual(values = c(0.5, 1.5)) +
+    geom_point(data = df %>% filter(Bloomperiod), size = rel(3)) +
+    geom_vline(xintercept = c(yday_1feb, yday_30apr)) +
+    scale_y_log10() +
+    facet_grid(Decade~.)
+```
+
+### c. Bloomperiod_02: Max Chl a
+```{r}
+Bloomperiod_02 <- Df.Arendal %>%
+  filter(Depth %in% 5 & Month %in% 2:4 & Klorofyll >= threshold & !is.na(Klorofyll)) %>% 
+  group_by(Year) %>%
+  summarize(Date = Date[Klorofyll %in% max(Klorofyll)][1])
+```
+
+## 4. Pick data in plankton data set
+### a. Create Bloom01 and BLoom2 variables (false/true) in plankton data set  
+We make a "buffer zone" of one extra day in each direction (in 1998, max Chla is 6 April by plankton data are from 7 april)  
+```{r}
+df_plank <- df_plank %>% as.data.frame()
+Bloomperiod_01 <- Bloomperiod_01 %>% as.data.frame()
+Bloomperiod_02 <- Bloomperiod_02  %>% as.data.frame()
+df_plank$Bloom01 <- FALSE
+df_plank$Bloom02 <- FALSE
+for (yr in unique(Bloomperiod_01$Year)){
+  # yr <- 1998
+  df <- Bloomperiod_01 %>% filter(Year %in% yr) 
+  sel <- df_plank$Year %in% yr & df_plank$Dato >= (df$Date1[1] - days(1)) & df_plank$Dato <= (df$Date2[1] + days(1))
+  df_plank$Bloom01[sel] <- TRUE
+  df <- Bloomperiod_02 %>% filter(Year %in% yr) 
+  sel <- df_plank$Year %in% yr & df_plank$Dato >= (df$Date[1] - days(1)) & df_plank$Dato <= (df$Date[1] + days(1)) 
+  df_plank$Bloom02[sel] <- TRUE
+}
+xtabs(~Year + Bloom01, df_plank)
+xtabs(~Year + Bloom02, df_plank)
+df_plank %>% filter(Bloom02) %>% View()
+
+```
+
+### b. Extract plankton data - mean/median values based on Bloom01
+```{r}
+df_plank_bloom01_mean <- df_plank %>%
+  filter(Bloom01) %>%
+  group_by(Year) %>%
+  summarize_at(vars(Cyanophycea:Flagellater), mean, na.rm = TRUE)
+
+df_plank_bloom01_median <- df_plank %>%
+  filter(Bloom01) %>%
+  group_by(Year) %>%
+  summarize_at(vars(Cyanophycea:Flagellater), median, na.rm = TRUE)
+    
+```
+
+### b. Extract plankton data - values based on Bloom02, i.e. max ChlA
+```{r}
+df_plank_bloom02 <- df_plank %>%
+  filter(Bloom02)
+
+```
+
+
