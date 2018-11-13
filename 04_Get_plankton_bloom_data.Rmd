@@ -176,9 +176,9 @@ df_plank_bloom02 <- df_plank %>%
 ```
 
 ```{r}
-write.csv(df_plank_bloom01_mean, "Data_produced/df_plank_bloom01_mean.csv")
-write.csv(df_plank_bloom01_median, "Data_produced/df_plank_bloom01_median.csv")
-write.csv(df_plank_bloom02, "Data_produced/df_plank_bloom02.csv")
+write.csv(df_plank_bloom01_mean, "Data_produced/df_plank_bloom01_mean.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_plank_bloom01_median, "Data_produced/df_plank_bloom01_median.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_plank_bloom02, "Data_produced/df_plank_bloom02.csv", row.names = FALSE, quote = FALSE)
 ```
 
 
