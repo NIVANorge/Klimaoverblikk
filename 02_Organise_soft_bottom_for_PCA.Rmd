@@ -575,7 +575,6 @@ BBartOrd_05
 Use extraction of phytoplankton data during springbloom produced in "04_Get_plankton_bloom_data.Rmd"
 ```{r}
 
-<<<<<<< HEAD
 require(RCurl)
 
 # Bloom_01: phytoplankton data extracted when Chl a (at 5m) over absolute threshold (1.1) during Feb to Apr  
@@ -583,21 +582,6 @@ bloom_o1_median <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANo
 
 # Bloom_02: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr
 bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Klimaoverblikk/master/Data_produced/df_plank_bloom02.csv"), header=T)
-
-
-=======
-df_bloom1_mean <- read.csv2("Data_produced/df_plank_bloom01_mean.csv", sep = ",", dec=".")
-df_bloom1_med  <- read.csv2("Data_produced/df_plank_bloom01_median.csv", sep = ",", dec=".")
-df_bloom2      <- read.csv2("Data_produced/df_plank_bloom02.csv", sep = ",", dec=".")
-
-str(df_bloom1_mean)
-
-
-# They used depth profiles (0-30m) before 2000, after 2000 they mostly sampled at 5m, but there are some dates where there are profiles after 2000 as well. See more info in data description.
-df <- df %>% 
-  select(Dato:Month) %>%
-  filter(Dyp == "0-30 m" | Dyp == "5 m" | Dyp == "5m")
->>>>>>> guri
 
 ```
 
@@ -609,45 +593,22 @@ df <- df %>%
 #SiteSpec <- df_long %>%
   #spread(Species, Value)
 
-<<<<<<< HEAD
-#str(bloom_o1_median)
-str(bloom_02)
-=======
-head(df_bloom1_mean,10) # wide
->>>>>>> guri
-
-
 # artsmatrise: beholder kun artsdata (klassenivå)
 # NB! artsdata er aggregert til 15 klasser
 spec.m_phyto_01 = bloom_01_median[, -c(1,17:20)]
 spec.m_phyto_02 = bloom_02[, -c(1:4,20:26)]
 
-#str (spec.m_phyto_02)
-
-# artsmatrise til ordinasjon
-spec.bloom1_mean <- df_bloom1_mean[,-1] # fjerner år
-
-# må erstatte NA med 0
-spec.m_phyto_02[is.na(spec.m_phyto_02)] = 0
-
-<<<<<<< HEAD
 cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto_02))
-=======
-# tror ikke det er et issue her
-spec.bloom1_mean [is.na(spec.bloom1_mean )] = 0
-
 cat("Dimensions of 'spec.m_hyto':\n", dim(spec.m_phyto))
->>>>>>> guri
+
 ```
 
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
-<<<<<<< HEAD
+
 ord1 <- decorana(spec.m_phyto_02)
-=======
-ord1 <- decorana(spec.bloom1_mean)
->>>>>>> guri
+
 ?decorana
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
@@ -691,11 +652,7 @@ points(ord2, display = "sites", pch = 21, col = "red", bg = "yellow")
 # trekker ut akseskorer så det kan kobles til år... i.e. Sitename
 ord1.sites <- data.frame(scores(ord1, display = "sites"))
 
-<<<<<<< HEAD
 ord1.df <- data.frame(Year = bloom_o1_median[,c(1)], ord1.sites)
-=======
-ord1.df <- data.frame(df_bloom1_mean[,], ord1.sites)
->>>>>>> guri
 
 str(ord1.df)
 
@@ -714,11 +671,7 @@ str(ord2.df)
 # Innledende DCA 
 DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
-<<<<<<< HEAD
   labs(color = "Year")
-=======
-  labs(color = "År")
->>>>>>> guri
 
 DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
@@ -727,31 +680,12 @@ DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Yea
 DCAplot.1
 DCAplot.2
 
-<<<<<<< HEAD
 # DCA aksene mot år
 DCAplot_3 <- ord1.df %>%
   gather("DCA_axis", "Value", DCA1:DCA4) %>%
   ggplot(aes(Year, Value)) +
     geom_line() +
     facet_grid(~DCA_axis)
-=======
-# Plotte akser mot tid
-
-DCAplot.3 <- ggplot(ord1.df, aes(Year, DCA1)) + 
-  geom_point() 
-
-DCAplot.4 <- ggplot(ord1.df, aes(Year, DCA2)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.5 <- ggplot(ord1.df, aes(Year, DCA3)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.6 <- ggplot(ord1.df, aes(Year, DCA4)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
->>>>>>> guri
 
 DCAplot_3
 
