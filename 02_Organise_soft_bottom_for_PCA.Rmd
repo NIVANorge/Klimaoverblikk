@@ -19,6 +19,9 @@ library(tidyverse)
 #install.packages("vegan")
 library(vegan)
 require(pander)
+#install.packages("RCurl")
+library(RCurl)
+
 ```
 
 ### Function for finding text in R files  
@@ -564,46 +567,50 @@ BBartOrd_05
 
 ## 3. Reorganise phytoplankton data and test ordination
 ### a. Data
+Use extraction of phytoplankton data during springbloom produced in "04_Get_plankton_bloom_data.Rmd"
 ```{r}
-df <- read_excel("Datasett/Plankton/Planteplankton Arendal.xlsx") # range = "A1:V471"
-df$Year <- lubridate::year(df$Dato)
-df$Month <- lubridate::month(df$Dato)
-xtabs(~Year + Month, df)
 
-# They used depth profiles (0-30m) before 2000, after 2000 they mostly sampled at 5m, but there are some dates where there are profiles after 2000 as well. See more info in data description.
-df <- df %>% 
-  select(Dato:Month) %>%
-  filter(Dyp == "0-30 m" | Dyp == "5 m" | Dyp == "5m")
+require(RCurl)
+
+# Bloom_01: phytoplankton data extracted when Chl a (at 5m) over absolute threshold (1.1) during Feb to Apr  
+bloom_o1_median <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Klimaoverblikk/master/Data_produced/df_plank_bloom01_median.csv"), header=T)
+
+# Bloom_02: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr
+bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Klimaoverblikk/master/Data_produced/df_plank_bloom02.csv"), header=T)
+
+
 
 ```
 
 
 ### c. Reshape for ordination  
-Reshape to wide format the tidyr way (instead of using reshape()) - gives us nice column names right away  
 ```{r}
 
 #dette datasettet er jo "wide" allerede
 #SiteSpec <- df_long %>%
   #spread(Species, Value)
 
-head (df,10)
-str(df)
+#str(bloom_o1_median)
+str(bloom_02)
 
-# artsmatrise (fjerner år og dyp (1:2) og grupper (18:20), år og mnd (21:22))
-# NB! artsdata er her aggregert til 15 klasser. I tillegg aggregert til tre overordnete grupper (kisel, dinoflag, flagellater)
-spec.m_phyto = df[, -c(1:2,18:22)]
-str (spec.m_phyto)
+
+# artsmatrise: beholder kun artsdata (klassenivå)
+# NB! artsdata er aggregert til 15 klasser
+spec.m_phyto_01 = bloom_01_median[, -c(1,17:20)]
+spec.m_phyto_02 = bloom_02[, -c(1:4,20:26)]
+
+#str (spec.m_phyto_02)
 
 # må erstatte NA med 0
-spec.m_phyto[is.na(spec.m_phyto)] = 0
+spec.m_phyto_02[is.na(spec.m_phyto_02)] = 0
 
-cat("Dimensions of 'spec.m_hyto':\n", dim(spec.m_phyto))
+cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto_02))
 ```
 
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
-ord1 <- decorana(spec.m_phyto)
+ord1 <- decorana(spec.m_phyto_02)
 ?decorana
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
@@ -612,7 +619,7 @@ ord1 <- decorana(spec.m_phyto)
 summary(ord1, display = "none")
 
 # Innledende NMDS - litt usikker på utfallet 
-ord2 <- metaMDS(spec.m_phyto)
+ord2 <- metaMDS(spec.m_phyto_02)
 
  ord2
  
@@ -620,11 +627,6 @@ ord2 <- metaMDS(spec.m_phyto)
 ```
 ### e. Test plot 1
 ```{r}
-
-
-
-# sorte sirkler er sites, røde pluss er arter
-#######NB! her stoppet jeg opp, usikker på videre plotting og tolking, siden dette kun er EN stasjon (sites/species???) Resten under dette er bare kopiert fra over, og ikke tilpasset Plankton
 
 # DCA
 plot(ord1) 
@@ -649,10 +651,10 @@ points(ord2, display = "sites", pch = 21, col = "red", bg = "yellow")
 ### g. Make data set for ggplot
 ```{r}
 # DCA
-# trekker ut akseskorer så det kan kobles til mnd og år... i.e. Sitename
+# trekker ut akseskorer så det kan kobles til år... i.e. Sitename
 ord1.sites <- data.frame(scores(ord1, display = "sites"))
 
-ord1.df <- data.frame(df[,c(1:2)], ord1.sites)
+ord1.df <- data.frame(Year = bloom_o1_median[,c(1)], ord1.sites)
 
 str(ord1.df)
 
@@ -660,7 +662,7 @@ str(ord1.df)
 # trekker ut akseskorer så det kan kobles til stasjon og år... i.e. Sitename
 ord2.sites <- data.frame(scores(ord2, display = "sites"))
 
-ord2.df <- data.frame(df[,c(1:2)], ord2.sites)
+ord2.df <- data.frame(Year = bloom_o1_median[,c(1)], ord2.sites)
 
 str(ord2.df)
 
@@ -671,61 +673,40 @@ str(ord2.df)
 # Innledende DCA 
 DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
-  facet_wrap(~ Site, nrow=2) +
-  labs(color = "År")
+  labs(color = "Year")
 
 DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
-  facet_wrap(~ Site, nrow=2) +
-  labs(color = "År")
+  labs(color = "Year")
 
 DCAplot.1
 DCAplot.2
 
-# Plotte akser mot tid
+# DCA aksene mot år
+DCAplot_3 <- ord1.df %>%
+  gather("DCA_axis", "Value", DCA1:DCA4) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(~DCA_axis)
 
-DCAplot.3 <- ggplot(ord1.df, aes(Year, DCA1)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.4 <- ggplot(ord1.df, aes(Year, DCA2)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.5 <- ggplot(ord1.df, aes(Year, DCA3)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.6 <- ggplot(ord1.df, aes(Year, DCA4)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-DCAplot.3
-DCAplot.4
-DCAplot.5
-DCAplot.6
+DCAplot_3
 
 
 # Innledende NMDS 
 NMDSplot.1 <- ggplot(ord2.df, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
-  facet_wrap(~ Site, nrow=2) +
-  labs(color = "År")
+  labs(color = "Year")
 
 NMDSplot.1
 
-# Plotte akser mot tid
+# NMDS aksene mot år
+NMDSplot_2 <- ord2.df %>%
+  gather("NMDS_axis", "Value", NMDS1:NMDS2) %>%
+  ggplot(aes(Year, Value)) +
+    geom_line() +
+    facet_grid(~NMDS_axis)
 
-NMDSplot.2 <- ggplot(ord2.df, aes(Year, NMDS1)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-NMDSplot.3 <- ggplot(ord2.df, aes(Year, NMDS2)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
-
-NMDSplot.2
-NMDSplot.3
+NMDSplot_2
 
 
 ```
