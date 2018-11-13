@@ -523,6 +523,11 @@ bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
 bound_05.sub <- ord1_05.species[ord1_05.species$DCA1 <= bound_05[[1]] |ord1_05.species$DCA1 >= bound_05[[2]], ]
 bound_35.sub <- ord1_35.species[ord1_35.species$DCA1 <= bound_35[[1]] |ord1_35.species$DCA1 >= bound_35[[2]], ]
 
+write.csv2(bound_05.sub, file = "Data_produced/BBord1_05_sub.csv")
+write.csv2(bound_35.sub, file = "Data_produced/BBord1_35_sub.csv")
+write.csv2(ord1_05.species, file = "Data_produced/BBord1_05_full.csv")
+write.csv2(ord1_35.species, file = "Data_produced/BBord1_35_full.csv")
+
 # hvor eventuelt subjektive skiller for å dele opp årsperioder skal gå bør nok fagansvarlig vurdere (dersom det trengs i tolkningene vel og merke)
 
 # disse blir litt mer komplisert dersom vi deler opp i grupper
@@ -570,6 +575,13 @@ df$Year <- lubridate::year(df$Dato)
 df$Month <- lubridate::month(df$Dato)
 xtabs(~Year + Month, df)
 
+df_bloom1_mean <- read.csv2("Data_produced/df_plank_bloom01_mean.csv", sep = ",", dec=".")
+df_bloom1_med  <- read.csv2("Data_produced/df_plank_bloom01_median.csv", sep = ",", dec=".")
+df_bloom2      <- read.csv2("Data_produced/df_plank_bloom02.csv", sep = ",", dec=".")
+
+str(df_bloom1_mean)
+
+
 # They used depth profiles (0-30m) before 2000, after 2000 they mostly sampled at 5m, but there are some dates where there are profiles after 2000 as well. See more info in data description.
 df <- df %>% 
   select(Dato:Month) %>%
@@ -586,16 +598,21 @@ Reshape to wide format the tidyr way (instead of using reshape()) - gives us nic
 #SiteSpec <- df_long %>%
   #spread(Species, Value)
 
-head (df,10)
-str(df)
+head(df_bloom1_mean,10) # wide
 
 # artsmatrise (fjerner år og dyp (1:2) og grupper (18:20), år og mnd (21:22))
 # NB! artsdata er her aggregert til 15 klasser. I tillegg aggregert til tre overordnete grupper (kisel, dinoflag, flagellater)
 spec.m_phyto = df[, -c(1:2,18:22)]
 str (spec.m_phyto)
 
+# artsmatrise til ordinasjon
+spec.bloom1_mean <- df_bloom1_mean[,-1] # fjerner år
+
 # må erstatte NA med 0
 spec.m_phyto[is.na(spec.m_phyto)] = 0
+
+# tror ikke det er et issue her
+spec.bloom1_mean [is.na(spec.bloom1_mean )] = 0
 
 cat("Dimensions of 'spec.m_hyto':\n", dim(spec.m_phyto))
 ```
@@ -603,7 +620,7 @@ cat("Dimensions of 'spec.m_hyto':\n", dim(spec.m_phyto))
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
-ord1 <- decorana(spec.m_phyto)
+ord1 <- decorana(spec.bloom1_mean)
 ?decorana
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
@@ -652,7 +669,7 @@ points(ord2, display = "sites", pch = 21, col = "red", bg = "yellow")
 # trekker ut akseskorer så det kan kobles til mnd og år... i.e. Sitename
 ord1.sites <- data.frame(scores(ord1, display = "sites"))
 
-ord1.df <- data.frame(df[,c(1:2)], ord1.sites)
+ord1.df <- data.frame(df_bloom1_mean[,], ord1.sites)
 
 str(ord1.df)
 
@@ -671,7 +688,6 @@ str(ord2.df)
 # Innledende DCA 
 DCAplot.1 <- ggplot(ord1.df, aes(DCA1, DCA2, color = as.numeric(as.character(Year)))) + 
   geom_point() + 
-  facet_wrap(~ Site, nrow=2) +
   labs(color = "År")
 
 DCAplot.2 <- ggplot(ord1.df, aes(DCA3, DCA4, color = as.numeric(as.character(Year)))) + 
@@ -685,8 +701,7 @@ DCAplot.2
 # Plotte akser mot tid
 
 DCAplot.3 <- ggplot(ord1.df, aes(Year, DCA1)) + 
-  geom_point() + 
-  facet_wrap(~ Site, nrow=2)
+  geom_point() 
 
 DCAplot.4 <- ggplot(ord1.df, aes(Year, DCA2)) + 
   geom_point() + 
