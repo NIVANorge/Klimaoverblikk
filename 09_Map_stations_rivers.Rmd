@@ -1,0 +1,114 @@
+---
+title: "09 Map with stations and rivers"
+author: "Helene"
+date: "13 november 2018"
+output: html_document
+---
+
+## 0. Libraries
+```{r}
+library(ggplot2)
+
+# packages hvis teste eksempel med googlemaps
+#library(RgoogleMaps)
+#library(ggmap)
+#library(grid)
+
+# packages for old script
+#library (maps)
+#install.packages("mapdata")
+#library(mapdata)
+```
+
+### 1. Make dataframe with stations (lat, long) 
+* mangler posisjon for elver, men f�r disse av Liv-Bente 14.11
+```{r}
+
+# making dataframe (positions in WGS84)
+df2 <- data.frame("Name" = c("Arendal","Grimstad","Arendal","Trom�ya","Prestholmen"), 
+                 "Type" = c("Hydro/Plankton","Soft-bottom","Soft-bottom","Hard-bottom","Hard-bottom"),
+                 "ID" = c("VT5","BR1", "BT44","HT113", "HR104"), 
+                 "Lon" = c(8.8330, 8.6295, 9.0312, 8.9445, 8.5372), 
+                 "Lat" = c(58.3870, 58.3253, 58.4038, 58.5132, 58.2732))
+
+str(df2)
+print (df2)
+
+```
+
+### 1. Plotte kart
+```{r}
+
+# kystverket data, h�yoppl�slig kyslinje, men ikke sve/dk
+load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/Norway_coastline_longlat2.RData")
+
+# test med Kystverkets kart
+#
+ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (ID))) + 
+  annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
+  coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11), ylim = c(58, 60)) +
+  geom_point() +
+  #geom_text (size = 3)
+  labs(x = "Longitude", y= "Latitude", color = "Stations")
+  
+
+
+# openstreetmap, st�rre omr�de
+load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/coastline_skagerrak_coords_longlat.RData")
+plot(y~x, type = "l", coastline_skagerrak_coords_longlat, 
+     xlim = c(5, 14), ylim = c(53, 60))
+
+
+
+```
+
+## OLD: code used to make map in 2013 article.
+```{r, eval = FALSE}
+
+# draw map
+map("worldHires", xlim = c (4, 15), ylim = c(53,60), fill = TRUE, col = "grey", ylab = "Latitude", xlab = "Longitude")
+# add axes
+map.axes()
+mtext("Latitude",side=2, line=3)
+mtext("Longitude",side=1, line=3)
+# scale bar, uten ratio
+#map.scale(ratio = FALSE)
+
+#Arendal St. 2 (58° 23´N 08° 49´E)
+points(y=58.23,x=08.49,col=1,pch=16,cex=1.5)
+text ("Arendal", y=58.4,x=8)
+
+# add country names
+text ("Norway", y=59.5,x=8, cex=1.2)
+text ("Sweden", y=58.6,x=13, cex=1.2)
+text ("Denmark", y=56.2,x=9.1, cex=1.1)
+text ("U.K.", y=52.5,x=1, cex=1.2)
+text ("Germany", y=53.4,x=10, cex=1.2)
+
+# oceans
+text ("Skagerrak", y=57.9,x=9.5)
+text ("Kattegat", y=56.7,x=11.6)
+text ("North Sea", y=56,x=5.5)
+
+
+
+# Kristiandsand 58°10′12″N 8°0′22″E
+#decimal  58.17, 8.006111
+points(y=58.10,x=08,col=1,pch=18, cex = 1.5)
+#text ("K", y=58.1,x=7)
+
+# Hanstholm 57° 7′ 12″ N, 8° 37′ 12″ E
+# decimal 57.12, 8.62
+points(y=57.12,x=08.62,col=1,pch=18, cex = 1.5)
+#text ("H", y=57,x=8.5)
+
+# source water stations
+points(y=54.18,x=07.89,col=1,pch=15, cex = 1.5)
+text ("Helgoland", y=54.2,x=7.9)
+
+points(y=56.4,x=12.07,col=1,pch=15, cex = 1.5)
+text ("Anholt", y=56.5,x=12.2)
+
+points(y=57.59,x=9.96,col=1,pch=15, cex = 1.5)
+text ("Hirtshals", y=57.5,x=9.9)
+```

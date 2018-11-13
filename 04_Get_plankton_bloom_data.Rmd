@@ -40,6 +40,7 @@ df_plank <- df_plank[sel,]
 # Stats
 cat("Select", sum(sel), "lines\n")
 cat(mean(sel)*100, "% of the data")
+
 ```
 
 ## 2. Plot ChlA
@@ -107,12 +108,14 @@ df <- Df.Arendal %>%
   filter(Depth %in% 5 & Month %in% 1:5) %>%
   mutate(Decade = paste0(10*floor(Year/10), "s")) %>%
   mutate(Bloomperiod = Month %in% 2:4 & Klorofyll >= threshold & !is.na(Klorofyll))
+
 ggplot(df, aes(yday(Date), Klorofyll, group = Year, color = factor(Year))) + 
     geom_line() +
     geom_point(data = df %>% filter(Bloomperiod), size = rel(3)) +
     geom_vline(xintercept = c(yday_1feb, yday_30apr)) +
     scale_y_log10() +
     facet_grid(Decade~.)
+
 ggplot(df, aes(yday(Date), Klorofyll, group = Year, color = factor(Year), size = Bloomperiod)) + 
     geom_line() +
     scale_size_manual(values = c(0.5, 1.5)) +
