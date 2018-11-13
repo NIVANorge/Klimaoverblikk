@@ -526,6 +526,11 @@ bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
 bound_05.sub <- ord1_05.species[ord1_05.species$DCA1 <= bound_05[[1]] |ord1_05.species$DCA1 >= bound_05[[2]], ]
 bound_35.sub <- ord1_35.species[ord1_35.species$DCA1 <= bound_35[[1]] |ord1_35.species$DCA1 >= bound_35[[2]], ]
 
+write.csv2(bound_05.sub, file = "Data_produced/BBord1_05_sub.csv")
+write.csv2(bound_35.sub, file = "Data_produced/BBord1_35_sub.csv")
+write.csv2(ord1_05.species, file = "Data_produced/BBord1_05_full.csv")
+write.csv2(ord1_35.species, file = "Data_produced/BBord1_35_full.csv")
+
 # hvor eventuelt subjektive skiller for å dele opp årsperioder skal gå bør nok fagansvarlig vurdere (dersom det trengs i tolkningene vel og merke)
 
 # disse blir litt mer komplisert dersom vi deler opp i grupper
@@ -578,8 +583,6 @@ bloom_o1_median <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANo
 # Bloom_02: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr
 bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Klimaoverblikk/master/Data_produced/df_plank_bloom02.csv"), header=T)
 
-
-
 ```
 
 
@@ -590,27 +593,22 @@ bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Kli
 #SiteSpec <- df_long %>%
   #spread(Species, Value)
 
-#str(bloom_o1_median)
-str(bloom_02)
-
-
 # artsmatrise: beholder kun artsdata (klassenivå)
 # NB! artsdata er aggregert til 15 klasser
 spec.m_phyto_01 = bloom_01_median[, -c(1,17:20)]
 spec.m_phyto_02 = bloom_02[, -c(1:4,20:26)]
 
-#str (spec.m_phyto_02)
-
-# må erstatte NA med 0
-spec.m_phyto_02[is.na(spec.m_phyto_02)] = 0
-
 cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto_02))
+cat("Dimensions of 'spec.m_hyto':\n", dim(spec.m_phyto))
+
 ```
 
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
+
 ord1 <- decorana(spec.m_phyto_02)
+
 ?decorana
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
