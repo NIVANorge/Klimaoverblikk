@@ -1,0 +1,183 @@
+---
+title: "06 - Time series regressions using Mann-Kendall and Theil-Sen"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged   
+---
+
+Non-parametric tests for trends over time  
+* Performed for seasons separately (note that hydrography + plankton seasons start in December)  
+* Uses data from script 05  
+* Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
+__NOTE: Have yet to include timing of spring flood (df_rivers_springflood) and DCA scores.__
+  
+
+DHJ: you borrowed much of this code from   'file:///C:/Data/Referanseelver_2018/Climate/05_Analysis_gridded_data_MK_TheilSen.html'    
+
+
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(lubridate)
+# install.packages("rkt") 
+library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
+
+# library(pander)
+```
+
+## 1. Data (annual and partly seasonal)  
+### a. Read data
+```{r}
+df_rivers_summ <- read.csv("Data_produced/05_df_rivers_summ.csv")
+df_rivers_springflood <- read.csv("Data_produced/05_df_rivers_springflood.csv")
+df_hydro_summ <- read.csv("Data_produced/05_df_hydro_summ.csv")
+df_plank_summ <- read.csv("Data_produced/05_df_plank_summ.csv")
+```
+
+### b. Collect data  
+* River data
+    + discharge divided by 1 million, the rest divided by 1000
+```{r}
+df1 <- df_rivers_summ %>%
+  mutate(DisTot = DisTot/1E3) %>%
+  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  mutate(River_type = paste0("River_", River_type),
+         Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
+  mutate(Variable = paste0(River_type, "_", Variable),
+         Value = Value/1E3) %>%
+  select(Variable, Year, Quarter, Value)
+head(df1)
+# df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
+
+df2 <- df_hydro_summ %>%
+  gather("Variable", "Value", Temperatur:Siktdyp) %>%
+  mutate(Variable = paste0(Variable, "_", Depth)) %>%
+  filter(!(Variable %in% c("Siktdyp_Intermediate", "Siktdyp_Deep"))) %>%
+  select(Variable, Year, Quarter, Value) %>%
+  select(Variable, Year, Quarter, Value)
+
+head(df2)
+
+df3 <- df_plank_summ %>%
+  gather("Variable", "Value", Kiselalger_med:Total_med) %>%
+  select(Variable, Year, Quarter, Value)
+head(df3)
+
+dat <- rbind(df1, df2, df3) %>% as.data.frame()
+```
+
+## 2. Testing
+### a. Test 1  
+```{r}
+test1 <- df_rivers_summ %>%
+  filter(River_type %in% "Local" & Quarter %in% 2) %>%
+  with(., rkt(Year, TrspTot_TOC))
+print(test1)
+
+```
+
+### b. Test 2
+```{r}
+trend_analysis <- function(variable, quarter, data = dat){
+  df <- data %>%
+    filter(Variable %in% variable & Quarter %in% quarter & !is.na(Value))
+  result <- rkt(df$Year, df$Value)
+  data.frame(Variable = variable, Quarter = quarter, 
+             P = result$sl, Estimate = result$B, 
+             Change_perc = 100*result$B/quantile(df$Value, 0.5), stringsAsFactors = FALSE)
+}
+
+trend_analysis("River_Local_TOC", 2)
+```
+
+## 3. Perform analysis  
+```{r}
+# ?map
+df <- dat %>%
+  filter(!is.na(Value)) %>%
+  group_by(Variable, Quarter) %>%
+  summarise(N = n()) %>%
+  filter(N >= 8)
+
+df_result_list <- 
+  1:nrow(df) %>% map(~trend_analysis(df$Variable[.], df$Quarter[.]))
+
+df_result <- bind_rows(df_result_list)
+```
+
+## 4. Show results
+### a. Most extreme changes
+```{r}
+df_result %>% arrange(Change_perc) %>% tail()
+df_result %>% arrange(Change_perc) %>% head()
+```
+
+## 5. Save results
+```{r}
+write.csv(df_result, "Data_produced/06_df_result.RData",
+          row.names = FALSE, quote = FALSE)
+```
+
+## 6. Some plots
+### a. Dot plot theme
+```{r}
+# Code and theme from http://www.joyce-robbins.com/blog/2016/06/02/datavis-with-rdrawing-a-cleveland-dot-plot-with-ggplot2/
+theme_dotplot <- theme_bw(14) +
+    theme(axis.text.y = element_text(size = rel(.75)),
+    	axis.ticks.y = element_blank(),
+        axis.title.x = element_text(size = rel(.75)),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5),
+        panel.grid.minor.x = element_blank())
+```
+
+### b. Plot one season
+```{r, fig.height=9}
+qrt <- 2        
+df <- df_result %>% filter(Quarter == qrt) 
+
+# create the plot
+ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
+	geom_point(color = "blue") +
+	scale_x_continuous(limits = c(-12, 4),
+		breaks = seq(-12, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n") +
+	ggtitle(paste("Changes in quarter", qrt))
+```
+
+
+### c. Plot for all seasons
+```{r, fig.height=9}
+df_mean <- df_result  %>%
+  group_by(Variable) %>%
+  summarise(Mean_change = mean(Change_perc)) %>%
+  arrange(Mean_change)
+
+df <- df_result 
+df$Variable <- factor(df$Variable, levels = df_mean$Variable)
+df$Quarter <- factor(df$Quarter)
+
+cols <- RColorBrewer::brewer.pal(4, "RdBu")[c(3,4,1,2)]
+# create the plot
+ggplot(df, aes(x = Change_perc, y = Variable, color = Quarter)) +
+  geom_vline(xintercept = 0) +
+	geom_point(size = 2) +
+  # scale_color_brewer(palette = "RdBu", direction = -1) +
+  scale_color_manual(values = cols) +
+	scale_x_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n")
+
+```
+
