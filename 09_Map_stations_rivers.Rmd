@@ -21,7 +21,6 @@ library(ggplot2)
 ```
 
 ### 1. Make dataframe with stations (lat, long) 
-* mangler posisjon for elver, men får disse av Liv-Bente 14.11
 ```{r}
 
 # making dataframe (positions in WGS84)
@@ -45,6 +44,8 @@ print (df2)
 ```
 
 ### 1. Plotte kart
+* Dag: jeg prøvde å merke de ID (kode for ulike stasjone) i plottet, for eks med geom_label eller med shape (men blir for mange), men får det ikke helt til. det må jo med inne i aes() på et vis, men fikk ikke helt til koplingen der... 
+* tenkte også jeg skulle prøve med googlemap, slik at vi kan få et større område med elver osv. men kan være det blir for bråkete ja... 
 ```{r}
 
 # kystverket data, høyoppløslig kyslinje, men ikke sve/dk
