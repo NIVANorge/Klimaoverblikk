@@ -27,7 +27,7 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
-# install.packages("rkt") 
+install.packages("rkt") 
 library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
 
 # library(pander)
@@ -55,7 +55,7 @@ df1 <- df_rivers_summ %>%
          Value = Value/1E3) %>%
   select(Variable, Year, Quarter, Value)
 head(df1)
-# df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
+df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
 df2 <- df_hydro_summ %>%
   gather("Variable", "Value", Temperatur:Siktdyp) %>%
@@ -111,6 +111,10 @@ df_result_list <-
   1:nrow(df) %>% map(~trend_analysis(df$Variable[.], df$Quarter[.]))
 
 df_result <- bind_rows(df_result_list)
+
+print (df_result)
+
+
 ```
 
 ## 4. Show results

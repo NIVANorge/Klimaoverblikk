@@ -25,14 +25,22 @@ library(ggplot2)
 ```{r}
 
 # making dataframe (positions in WGS84)
-df2 <- data.frame("Name" = c("Arendal","Grimstad","Arendal","Tromøya","Prestholmen"), 
-                 "Type" = c("Hydro/Plankton","Soft-bottom","Soft-bottom","Hard-bottom","Hard-bottom"),
-                 "ID" = c("VT5","BR1", "BT44","HT113", "HR104"), 
-                 "Lon" = c(8.8330, 8.6295, 9.0312, 8.9445, 8.5372), 
-                 "Lat" = c(58.3870, 58.3253, 58.4038, 58.5132, 58.2732))
+df2 <- data.frame("Name" = c("Arendal","Grimstad","Arendal","Tromøya","Prestholmen",
+                             "Glomma","Drammenselva","Numedalslågen","Skienselva","Gjerstadelva",
+                             "Storelva","Nidelva"), 
+                 "Type" = c("Hydro/Plankton","Soft-bottom","Soft-bottom","Hard-bottom","Hard-bottom",
+                            "River", "River", "River", "River", "River", "River", "River"),
+                 "ID" = c("VT5","BR1", "BT44","HT113", "HR104",
+                          "GLO","DRA","NUM","SKI","GJE","STO","NID" ), 
+                 "Lon" = c(8.8330, 8.6295, 9.0312, 8.9445, 8.5372, 
+                           11.134, 10.007, 10.070, 9.608, 9.078, 8.854, 8.637), 
+                 "Lat" = c(58.3870, 58.3253, 58.4038, 58.5132, 58.2732,
+                           59.279, 59.752, 59.101, 59.204, 58.763, 58.632, 58.407))
 
 str(df2)
 print (df2)
+
+
 
 ```
 
@@ -44,20 +52,50 @@ load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/Norway_coastline_longlat2.RData"
 
 # test med Kystverkets kart
 #
-ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (ID))) + 
+ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (Type))) + 
   annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
-  coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11), ylim = c(58, 60)) +
+  coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11.5), ylim = c(58, 60)) +
   geom_point() +
-  #geom_text (size = 3)
-  labs(x = "Longitude", y= "Latitude", color = "Stations")
-  
+  labs(x = "Longitude", y= "Latitude", color = "Station type")
 
+# test for å merke med ID, ikke helt funnet god løsning
+#, shape = ID
+ #geom_text (size = 3)
+  #geom_label(label=Name, nudge_x = 0.25, nudge_y = 0.2)
 
 # openstreetmap, større område
 load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/coastline_skagerrak_coords_longlat.RData")
 plot(y~x, type = "l", coastline_skagerrak_coords_longlat, 
      xlim = c(5, 14), ylim = c(53, 60))
 
+
+
+# eksempel med googlemap (ikke tilpasset): http://yarkerconsulting.com/index.php/blog/15-google-maps-and-r
+library(RgoogleMaps)
+library(ggplot2)
+library(ggmap)
+require(grid)
+# Another way of plotting
+
+basemap <- get_map(location=c(lon=mean(lon),lat=mean(lat)), zoom = 8, maptype='roadmap', source='google',crop=TRUE)
+
+ggmap(basemap)
+
+map1 <- ggmap(basemap, extent='panel', base_layer=ggplot(data=stdata, aes(x=lon, y=lat)))
+
+# map showing point size based on altitude
+
+map.alt <- map1+geom_point(aes(size=stdata$alt),color="darkblue")+scale_size(range=c(2,9),breaks=c(10,100,500,1000))
+
+# add plot labels
+
+map.alt <- map.alt + labs(x ="Longitude", y="Latitude", size = "Altitude")
+
+# add title theme
+
+map.alt <- map.alt + theme(plot.title = element_text(hjust = 0, vjust = 1, face = c("bold")))+theme(legend.position="bottom")
+
+print(map.alt) 
 
 
 ```
