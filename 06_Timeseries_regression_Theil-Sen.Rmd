@@ -27,26 +27,73 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
-install.packages("rkt") 
+# install.packages("rkt") 
 library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
 
 # library(pander)
 ```
 
-## 1. Data (annual and partly seasonal)  
-### a. Read data
+## 1. Data  
+### a. Read annual data
 ```{r}
-df_rivers_summ <- read.csv("Data_produced/05_df_rivers_summ.csv")
-df_rivers_springflood <- read.csv("Data_produced/05_df_rivers_springflood.csv")
-df_hydro_summ <- read.csv("Data_produced/05_df_hydro_summ.csv")
-df_plank_summ <- read.csv("Data_produced/05_df_plank_summ.csv")
+df_rivers_summ_a <- read.csv("Data_produced/05_df_rivers_summ_a.csv")
+df_rivergroup_springflood <- read.csv("Data_produced/05_df_rivergroup_springflood.csv")
+df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
+df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
 ```
 
-### b. Collect data  
+### b. Collect annual data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
-df1 <- df_rivers_summ %>%
+df1a <- df_rivers_summ_a %>%
+  mutate(DisTot = DisTot/1E3) %>%
+  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  mutate(River_type = paste0("River_", River_type),
+         Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
+  mutate(Variable = paste0(River_type, "_", Variable),
+         Value = Value/1E3) %>%
+  select(Variable, Year, Value)
+# head(df1a)
+# df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
+
+df1b <- df_rivergroup_springflood %>%
+  rename(Floodmax = DisTot_max_rel, FloodmaxMonth = DisTot_max_month) %>%
+  gather("Variable", "Value", Floodmax, FloodmaxMonth) %>%
+  mutate(River_type = paste0("River_", River_type)) %>%
+  mutate(Variable = paste0(River_type, "_", Variable)) %>%
+  select(Variable, Year, Value)
+# head(df1b)
+
+df2 <- df_hydro_summ_a %>%
+  gather("Variable", "Value", Temperatur:Siktdyp) %>%
+  mutate(Variable = paste0(Variable, "_", Depth)) %>%
+  filter(!(Variable %in% c("Siktdyp_Intermediate", "Siktdyp_Deep"))) %>%
+  select(Variable, Year, Value)
+
+# head(df2)
+
+df3 <- df_plank_summ_a %>%
+  gather("Variable", "Value", Kiselalger_med:Total_med) %>%
+  select(Variable, Year,Value)
+# head(df3)
+
+dat_a <- rbind(df1a, df1b, df2, df3) %>% as.data.frame()
+head(dat_a)
+```
+
+### c. Read quarterly data
+```{r}
+df_rivers_summ_q <- read.csv("Data_produced/05_df_rivers_summ_q.csv")
+df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
+df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
+```
+
+### b. Collect quarterly data  
+* River data
+    + discharge divided by 1 million, the rest divided by 1000
+```{r}
+df1 <- df_rivers_summ_q %>%
   mutate(DisTot = DisTot/1E3) %>%
   gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
   mutate(River_type = paste0("River_", River_type),
@@ -55,9 +102,10 @@ df1 <- df_rivers_summ %>%
          Value = Value/1E3) %>%
   select(Variable, Year, Quarter, Value)
 head(df1)
-df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
+# df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
-df2 <- df_hydro_summ %>%
+
+df2 <- df_hydro_summ_q %>%
   gather("Variable", "Value", Temperatur:Siktdyp) %>%
   mutate(Variable = paste0(Variable, "_", Depth)) %>%
   filter(!(Variable %in% c("Siktdyp_Intermediate", "Siktdyp_Deep"))) %>%
@@ -66,67 +114,88 @@ df2 <- df_hydro_summ %>%
 
 head(df2)
 
-df3 <- df_plank_summ %>%
+df3 <- df_plank_summ_q %>%
   gather("Variable", "Value", Kiselalger_med:Total_med) %>%
   select(Variable, Year, Quarter, Value)
 head(df3)
 
-dat <- rbind(df1, df2, df3) %>% as.data.frame()
+dat_q <- rbind(df1, df2, df3) %>% as.data.frame()
 ```
 
-## 2. Testing
-### a. Test 1  
+## 3a. Define trend analysis functions
+One for annual data, one for swasonal
 ```{r}
-test1 <- df_rivers_summ %>%
-  filter(River_type %in% "Local" & Quarter %in% 2) %>%
-  with(., rkt(Year, TrspTot_TOC))
-print(test1)
-
-```
-
-### b. Test 2
-```{r}
-trend_analysis <- function(variable, quarter, data = dat){
+trend_analysis_a <- function(variable, data = dat_a){
   df <- data %>%
-    filter(Variable %in% variable & Quarter %in% quarter & !is.na(Value))
+    filter(Variable %in% variable & !is.na(Value))
   result <- rkt(df$Year, df$Value)
-  data.frame(Variable = variable, Quarter = quarter, 
+  data.frame(Variable = variable, Quarter = "Annual", 
              P = result$sl, Estimate = result$B, 
              Change_perc = 100*result$B/quantile(df$Value, 0.5), stringsAsFactors = FALSE)
 }
 
-trend_analysis("River_Local_TOC", 2)
+# debugonce(trend_analysis_a)
+# trend_analysis_a("River_Distant_TOTN")
+
+  
+trend_analysis_q <- function(variable, quarter, data = dat_q){
+  df <- data %>%
+    filter(Variable %in% variable & Quarter %in% quarter & !is.na(Value))
+  result <- rkt(df$Year, df$Value)
+  data.frame(Variable = variable, Quarter = as.character(quarter), 
+             P = result$sl, Estimate = result$B, 
+             Change_perc = 100*result$B/quantile(df$Value, 0.5), stringsAsFactors = FALSE)
+}
+# trend_analysis_q("River_Distant_TOTN", 2)
+
 ```
 
-## 3. Perform analysis  
+
+## 3b. Annual data, perform analysis  
 ```{r}
 # ?map
-df <- dat %>%
+df <- dat_a %>%
+  filter(!is.na(Value)) %>%
+  group_by(Variable) %>%
+  summarise(N = n()) %>%
+  filter(N >= 8)
+
+df_result_list <- 
+  1:nrow(df) %>% map(~trend_analysis_a(df$Variable[.], data = dat_a))
+
+df_result_a <- bind_rows(df_result_list)
+
+```
+
+
+## 3b. Quarterly data, perform analysis  
+```{r}
+# ?map
+df <- dat_q %>%
   filter(!is.na(Value)) %>%
   group_by(Variable, Quarter) %>%
   summarise(N = n()) %>%
   filter(N >= 8)
 
 df_result_list <- 
-  1:nrow(df) %>% map(~trend_analysis(df$Variable[.], df$Quarter[.]))
+  1:nrow(df) %>% map(~trend_analysis_q(df$Variable[.], df$Quarter[.], data = dat_q))
 
-df_result <- bind_rows(df_result_list)
-
-print (df_result)
-
+df_result_q <- bind_rows(df_result_list)
 
 ```
 
 ## 4. Show results
 ### a. Most extreme changes
 ```{r}
-df_result %>% arrange(Change_perc) %>% tail()
-df_result %>% arrange(Change_perc) %>% head()
+df_result_q %>% arrange(Change_perc) %>% tail()
+df_result_q %>% arrange(Change_perc) %>% head()
 ```
 
 ## 5. Save results
 ```{r}
-write.csv(df_result, "Data_produced/06_df_result.RData",
+write.csv(df_result_a, "Data_produced/06_df_result_a.csv",
+          row.names = FALSE, quote = FALSE)
+write.csv(df_result_q, "Data_produced/06_df_result_q.csv",
           row.names = FALSE, quote = FALSE)
 ```
 
@@ -146,28 +215,20 @@ theme_dotplot <- theme_bw(14) +
 ### b. Plot one season
 ```{r, fig.height=9}
 qrt <- 2        
-df <- df_result %>% filter(Quarter == qrt) 
+df <- df_result_q %>% filter(Quarter == qrt) 
 
-# create the plot
-ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
-	geom_point(color = "blue") +
-	scale_x_continuous(limits = c(-12, 4),
-		breaks = seq(-12, 4, 2)) +
-	theme_dotplot +
-	xlab("\nChange per year (%)") +
-	ylab("Variable\n") +
-	ggtitle(paste("Changes in quarter", qrt))
+
 ```
 
 
 ### c. Plot for all seasons
 ```{r, fig.height=9}
-df_mean <- df_result  %>%
+df_mean <- df_result_q  %>%
   group_by(Variable) %>%
   summarise(Mean_change = mean(Change_perc)) %>%
   arrange(Mean_change)
 
-df <- df_result 
+df <- df_result_q 
 df$Variable <- factor(df$Variable, levels = df_mean$Variable)
 df$Quarter <- factor(df$Quarter)
 
@@ -182,6 +243,20 @@ ggplot(df, aes(x = Change_perc, y = Variable, color = Quarter)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n")
+
+```
+
+### d. Plot trends for annual data
+```{r, fig.height=9}
+# create the plot
+ggplot(df_result_a, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
+	geom_point(color = "blue") +
+	scale_x_continuous(limits = c(-12, 4),
+		breaks = seq(-12, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n") +
+	ggtitle("Changes in annual means")
 
 ```
 
