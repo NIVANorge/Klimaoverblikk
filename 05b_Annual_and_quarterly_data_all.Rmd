@@ -1,0 +1,433 @@
+---
+title: "05 Collect annual data of all types"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged   
+---
+
+Overview:   
+* Produces summarized data by year (ending in '_a') and quarter (ending in '_q') 
+* Reads data from delivered data files (rivers, hydrology) and ordination (plankton, hard-bottom, soft-bottom)   
+* Data produced are written to Data_produced (starting with '05_') for later use   
+* No need to add ordination "data" (ie., scores), they are already at annual level 
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(lubridate)
+# library(pander)
+```
+
+## 1. Folders and files    
+Content of folders (see code)  
+```{r}
+dir("Datasett")
+dir("Datasett/River data (from OKA)")
+dir("Datasett/hydrografi")
+dir("Datasett/Bløtbunn")
+dir("Datasett/hardbunn_kopi")
+dir("Datasett/Plankton")
+```
+
+## 2. River data   
+Content of folders (see code)
+```{r}
+dir("Datasett/River data (from OKA)/Annual mean flows")
+dir("Datasett/River data (from OKA)/Monthly loads")
+dir("Datasett/River data (from OKA)/Concentrations (individual samples)")
+dir("Datasett/River data (from OKA)/Monthly flow-weighted concentrations")
+```
+
+### a. Data of monthly river loads and total discharge  
+```{r}
+df1 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Storelva_monthly loads.xlsx")  
+df2 <- read_excel("Datasett/River data (from OKA)/Monthly loads/Gjerstadelva_Nidelva_monthly loads.xlsx")  
+df3 <- read_excel("Datasett/River data (from OKA)/Monthly loads/RIDx5_monthly loads.xlsx")  
+
+# head(df1, 3)
+# head(df2, 3)
+# head(df3, 3)
+
+# colnames(df1) %>% dput()
+# colnames(df2) %>% dput()
+# colnames(df3) %>% dput()   RID rivers also include PO4, SiO2 and SPM
+
+df_rivers <- bind_rows(df1[-1,], df2[-1,], df3[-1,])
+
+# colnames(df_rivers) %>% dput()
+vars <- c("TrspTot TOTN", "TrspTot NO3-N", "TrspTot NH4-N", "TrspTot TOTP",           
+          "TrspTot TOC", "TrspTot ALK", "TrspTot Ca", "DisTot")
+for (var in vars)
+  df_rivers[[var]] <- as.numeric(df_rivers[[var]])
+df_rivers$Time <- with(df_rivers, lubridate::ymd(paste(Year, Month, "15")))
+
+# Add "_" in column names (TrspTot Ca -> TrspTot_Ca)
+colnames(df_rivers) <- sub(" ", "_", colnames(df_rivers), fixed = TRUE)
+
+# Table of available data for each river
+tb <- df_rivers %>% 
+  gather("Variable", Value, TrspTot_TOTN:DisTot) %>%
+  filter(!is.na(Value)) %>%
+  xtabs(~Station_name + Variable, .)
+tb
+
+```
+
+### b. Local rivers, plot monthly mean discharge by station
+```{r}
+gg <- df_rivers %>%
+  filter(substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor")) %>%
+  group_by(Station_name, Month) %>%
+  summarise(Mean = mean(DisTot, na.rm = TRUE), 
+            Q10 = quantile(DisTot, 0.1, na.rm = TRUE), 
+            Q90 = max(DisTot, 0.9, na.rm = TRUE)) %>%
+  ggplot(., aes(Month, Mean)) + 
+    geom_ribbon(aes(ymin = Q10, ymax = Q90), fill = "lightgreen") +
+    geom_line() + geom_point() +
+    facet_wrap(~Station_name)
+gg
+# gg + scale_y_log10()
+```
+
+### c. Distant rivers, plot monthly mean discharge by station  
+Including Otra
+```{r}
+gg <- df_rivers %>%
+  filter(!substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor")) %>%
+  group_by(Station_name, Month) %>%
+  summarise(Mean = mean(DisTot, na.rm = TRUE), 
+            Q10 = quantile(DisTot, 0.1, na.rm = TRUE), 
+            Q90 = max(DisTot, 0.9, na.rm = TRUE)) %>%
+  ggplot(., aes(Month, Mean)) + 
+    geom_ribbon(aes(ymin = Q10, ymax = Q90), fill = "lightgreen") +
+    geom_line() + geom_point() +
+    facet_wrap(~Station_name)
+gg
+# gg + scale_y_log10()
+```
+
+### d. Summarize by "local rivers"/"distant rivers"    
+    * Data ending with _a = annual, ending in _q = quarter
+    * Exclude Otra  
+    
+```{r}
+df <- df_rivers %>%
+  filter(!Station_name %in% "Otra") %>%
+  mutate(River_type = 
+           ifelse(substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor"), "Local", "Distant"))
+
+df_rivers_summ_a <- df %>% 
+  group_by(River_type, Year) %>%
+  summarise_at(c("TrspTot_TOTN", "TrspTot_NO3-N", "TrspTot_TOTP", "TrspTot_TOC", "DisTot"), sum, na.rm = TRUE)
+
+df_rivers_summ_q <- df %>%
+  mutate(Quarter = case_when(
+    Month %in% 1:3 ~ 1,
+    Month %in% 4:6 ~ 2,
+    Month %in% 7:9 ~ 3,
+    Month %in% 10:12 ~ 4
+  )) %>%
+  group_by(River_type, Year, Quarter) %>%
+  summarise_at(c("TrspTot_TOTN", "TrspTot_NO3-N", "TrspTot_TOTP", "TrspTot_TOC", "DisTot"), sum, na.rm = TRUE)
+
+```
+
+### e1. Plot annual data  
+Also testing out plotting moving average using tidyquant::geom_ma  
+```{r}
+# library(zoo)
+# install.packages("tidyquant")
+library(tidyquant)
+
+ggplot(df_rivers_summ_a, aes(Year, DisTot/1E6, color = River_type)) +
+  geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+  geom_point() + 
+  facet_grid(River_type~., scales = "free_y", labeller = label_both)
+
+```
+
+### e2. Plot quarterly data
+```{r}
+ggplot(df_rivers_summ_q, aes(Year, DisTot/1E6, color = River_type)) +
+  geom_smooth() +
+  geom_point() + 
+  facet_grid(River_type~Quarter, scales = "free_y", labeller = label_both)
+
+```
+
+### f. River level: Timing and size of spring flood
+```{r}
+df_rivers_springflood_allyears <- df_rivers %>%
+  group_by(Station_name, Year) %>%
+  mutate(DisTot_max = max(DisTot[Month %in% 1:6]), na.rm = TRUE) %>%
+  group_by(Station_name) %>%
+  summarize(DisTot_max_mean = mean(DisTot_max, na.rm = TRUE))
+df_rivers_springflood_allyears
+
+df_rivers_springflood <- df_rivers %>%
+  filter(Month %in% 1:6) %>%
+  group_by(Station_name, Year) %>%
+  mutate(DisTot_max = max(DisTot), na.rm = TRUE) %>%
+  group_by(Station_name) %>%
+  mutate(DisTot_max_mean = mean(DisTot_max, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(Station_name, Year) %>%
+  summarize(DisTot_max_rel = max(DisTot/DisTot_max_mean*100, na.rm = TRUE),
+            DisTot_max_month = Month[DisTot == DisTot_max][1],
+            DisTot_40perc = Month[DisTot >= 0.40*DisTot_max_mean][1],
+            DisTot_60perc = Month[DisTot >= 0.60*DisTot_max_mean][1],
+            DisTot_80perc = Month[DisTot >= 0.80*DisTot_max_mean][1])
+```
+
+
+### g1. Plot of max flood
+```{r}
+ggplot(df_rivers_springflood, aes(Year, DisTot_max_rel)) +
+  geom_smooth() + geom_point() +
+  facet_wrap(~Station_name)
+```
+
+### g2. Plot of flood timing
+```{r}
+df_rivers_springflood %>%
+  gather("Parameter", "Month", DisTot_max_month, DisTot_40perc, DisTot_60perc, DisTot_80perc) %>%
+  ggplot(aes(Year, Month, group = Parameter, color = Parameter)) +
+  geom_smooth(method = "lm") + geom_point() +
+  facet_wrap(~Station_name)
+```
+
+
+### h. River group level: Timing and size of spring flood
+```{r}
+df_rivergroup <- df_rivers %>%
+  filter(!Station_name %in% "Otra") %>%
+  mutate(River_type = 
+           ifelse(substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor"), "Local", "Distant")) %>%
+  group_by(River_type, Year, Month) %>%
+  summarize(DisTot = sum(DisTot, na.rm = TRUE))
+  
+df_rivergroup_springflood_allyears <- df_rivergroup %>%
+  group_by(River_type, Year) %>%
+  mutate(DisTot_max = max(DisTot[Month %in% 1:6]), na.rm = TRUE) %>%
+  group_by(River_type) %>%
+  summarize(DisTot_max_mean = mean(DisTot_max, na.rm = TRUE))
+df_rivergroup_springflood_allyears
+
+df_rivergroup_springflood <- df_rivergroup %>%
+  filter(Month %in% 1:6) %>%
+  group_by(River_type, Year) %>%
+  mutate(DisTot_max = max(DisTot), na.rm = TRUE) %>%
+  group_by(River_type) %>%
+  mutate(DisTot_max_mean = mean(DisTot_max, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(River_type, Year) %>%
+  summarize(DisTot_max_rel = max(DisTot/DisTot_max_mean*100, na.rm = TRUE),
+            DisTot_max_month = Month[DisTot == DisTot_max][1],
+            DisTot_40perc = Month[DisTot >= 0.40*DisTot_max_mean][1],
+            DisTot_60perc = Month[DisTot >= 0.60*DisTot_max_mean][1],
+            DisTot_80perc = Month[DisTot >= 0.80*DisTot_max_mean][1])
+
+```
+
+### g1. Plot of max flood
+```{r}
+ggplot(df_rivergroup_springflood, aes(Year, DisTot_max_rel)) +
+  geom_smooth() + geom_point() +
+  facet_wrap(~River_type)
+```
+
+### g2. Plot of flood timing
+```{r}
+df_rivergroup_springflood %>%
+  gather("Parameter", "Month", DisTot_max_month, DisTot_40perc, DisTot_60perc, DisTot_80perc) %>%
+  ggplot(aes(Year, Month, group = Parameter, color = Parameter)) +
+  geom_smooth(method = "lm") + 
+  geom_jitter(width = 0, height = 0.15) +
+  facet_wrap(~River_type)
+```
+
+
+### h. Save all
+```{r}
+write.csv(df_rivers_summ_a, "Data_produced/05_df_rivers_summ_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_rivers_summ_q, "Data_produced/05_df_rivers_summ_q.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_rivergroup_springflood, "Data_produced/05_df_rivergroup_springflood.csv", 
+          row.names = FALSE, quote = FALSE)
+```
+
+
+## 3. Hydrological data
+### a. Read data
+```{r}
+load("Datasett/Hydrografi/Arendal_allvars_1990_2016.Rdata")
+Df.Arendal$Month <- Df.Arendal$Dato %>% as.character() %>% substr(6,7) %>% as.numeric()
+Df.Arendal$Year <- Df.Arendal$Dato %>% as.character() %>% substr(1,4) %>% as.numeric()
+Df.Arendal$Time <- ymd_hms(paste(Df.Arendal$Dato, "00:00:00"))   # R's time format
+```
+
+### b. Summarize by depth bins and quarter    
+    * Depth bins = 0-10, 10-30, 30-50
+    * Quarters starting with March
+```{r}
+df <- Df.Arendal %>%
+  mutate(
+    Depth = case_when(
+      Depth %in% c(0,5,10) ~ "Surface",
+      Depth %in% c(20,30) ~ "Intermediate",
+      Depth %in% c(50,75) ~ "Deep")
+    )
+
+df_hydro_summ_a <- df %>%
+  group_by(Year, Depth) %>%
+  summarize_at(vars(Temperatur:Siktdyp), mean, na.rm = TRUE)
+
+df_hydro_summ_q <- df %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:2 ~ 1,
+      Month %in% 3:5 ~ 2,
+      Month %in% 6:8 ~ 3,
+      Month %in% 9:11 ~ 4,
+      Month %in% 12 ~ 1),
+    Year2 = case_when(
+      Month == 12 ~ Year + 1,
+      Month < 12 ~ Year)
+    ) %>%
+  group_by(Year2, Quarter, Depth) %>%
+  summarize_at(vars(Temperatur:Siktdyp), mean, na.rm = TRUE) %>%
+  rename(Year = Year2)
+
+df_hydro_summ_a$Depth <- factor(df_hydro_summ_a$Depth, 
+                                 levels = c("Surface", "Intermediate", "Deep"))
+df_hydro_summ_q$Depth <- factor(df_hydro_summ_q$Depth, 
+                                 levels = c("Surface", "Intermediate", "Deep"))
+```
+
+### c. Save
+```{r}
+write.csv(df_hydro_summ_a, "Data_produced/05_df_hydro_summ_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_hydro_summ_q, "Data_produced/05_df_hydro_summ_q.csv", row.names = FALSE, quote = FALSE)
+```
+
+### d1. Plot temperature, annual
+```{r}
+ggplot(df_hydro_summ_a, aes(Year, Temperatur, color = Depth)) +
+  geom_smooth(method = "lm") + geom_point()
+```
+
+### d2. Plot temperature by quarter
+```{r}
+ggplot(df_hydro_summ_q, aes(Year, Temperatur, color = Depth)) +
+  geom_smooth(method = "lm") + geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+```
+
+### e. Plot some nutrients etc.
+```{r}
+df_hydro_summ_q %>%
+  gather("Var", "Concentration", NO2_NO3, TotP, TotN, TSM) %>%
+  ggplot(aes(Year, Concentration, color = Depth)) +
+    geom_smooth(method = "lm") + geom_point() +
+    facet_grid(Var~Quarter, scales = "free_y", labeller = label_both)
+```
+
+## 4. Plankton  
+Summarize main groups only  
+    * Will add ordination scores (DCA) later
+    
+### a. Read plankton data
+```{r}
+df_plank <- read_excel("Datasett/Plankton/Planteplankton Arendal.xlsx") # range = "A1:V471"
+df_plank$Year <- lubridate::year(df_plank$Dato)
+df_plank$Month <- lubridate::month(df_plank$Dato)
+```
+
+### b. Plankton: Select by depth  
+0-30 or 5 m  
+```{r}
+xtabs(~Dyp, df_plank)
+
+# Select
+sel <- df_plank$Dyp %in% c("0-30 m", "5 m", "5m"); 
+df_plank <- df_plank[sel,]
+
+# Stats
+cat("Select", sum(sel), "lines\n")
+cat(mean(sel)*100, "% of the data")
+```
+
+### c. Summarize data  
+Use quarters starting with February  
+```{r}
+df_plank_summ_a <- df_plank %>%
+  mutate(Total = Kiselalger + Dinoflagellater + Flagellater) %>%
+  group_by(Year) %>%
+  summarize_at(.vars = vars(Kiselalger:Flagellater, Total), 
+               .funs = funs(med = median, max = max)
+               )
+
+df_plank_summ_q <- df_plank %>%
+  mutate(
+    Quarter = case_when(
+      Month %in% 1:2 ~ 1,
+      Month %in% 3:5 ~ 2,
+      Month %in% 6:8 ~ 3,
+      Month %in% 9:11 ~ 4,
+      Month %in% 12 ~ 1),
+    Year2 = case_when(
+      Month == 12 ~ Year + 1,
+      Month < 12 ~ Year),
+    Total = Kiselalger + Dinoflagellater + Flagellater
+    ) %>%
+  group_by(Year2, Quarter) %>%
+  summarize_at(.vars = vars(Kiselalger:Flagellater, Total), 
+               .funs = funs(med = median, max = max)
+               ) %>%
+  rename(Year = Year2)
+
+```
+
+### d. Save
+```{r}
+write.csv(df_plank_summ_a, "Data_produced/05_df_plank_summ_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(df_plank_summ_q, "Data_produced/05_df_plank_summ_q.csv", row.names = FALSE, quote = FALSE)
+```
+
+
+### e1. Plot medians by year
+```{r}
+df_plank_summ_q %>%
+  gather("Group", "Median", Kiselalger_med:Total_med) %>%
+  ggplot(aes(Year, Median/1E6)) +
+    geom_smooth(method = "lm") + geom_point() +
+    facet_grid(Group~., scales = "free_y")
+```
+
+
+### e2. Plot medians by quarter
+```{r}
+df_plank_summ_q %>%
+  gather("Group", "Median", Kiselalger_med:Total_med) %>%
+  mutate(Quarter = paste("Quarter", Quarter)) %>%
+  ggplot(aes(Year, Median/1E6)) +
+    geom_smooth(method = "lm") + geom_point() +
+    facet_grid(Group~Quarter, scales = "free_y")
+```
+### f. Plot maxima
+```{r}
+df_plank_summ_q %>%
+  gather("Group", "Maximum", Kiselalger_max:Total_max) %>%
+  mutate(Quarter = paste("Quarter", Quarter)) %>%
+  ggplot(aes(Year, Maximum/1E6)) +
+    geom_smooth(method = "lm") + geom_point() +
+    facet_grid(Group~Quarter, scales = "free_y")
+```
+
+
