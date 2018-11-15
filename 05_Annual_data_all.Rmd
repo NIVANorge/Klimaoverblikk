@@ -10,11 +10,9 @@ output:
     df_print: paged   
 ---
 
-Overview:   
-* Produces summarized data by year and quarter
-* Reads data from delivered data files (rivers, hydrology) and ordination (plankton, hard-bottom, soft-bottom)   
-* Data produced are written to Data_produced (starting with '05_') for later use   
-* Ordination "data" will be added later  
+__Test file__ for producing summarized data by year and quarter   
+Actual data used (in folder 'Data_produced') are made in __script 05b__    
+
 
 ## 0. Libraries
 ```{r}
@@ -190,9 +188,9 @@ df_rivers_springflood <- df_rivers %>%
 
 ### g. Save both
 ```{r}
-write.csv(df_rivers_summ, "Data_produced/05_df_rivers_summ.csv", row.names = FALSE, quote = FALSE)
-write.csv(df_rivers_springflood, "Data_produced/05_df_rivers_springflood.csv", 
-          row.names = FALSE, quote = FALSE)
+# write.csv(df_rivers_summ, "Data_produced/05_df_rivers_summ.csv", row.names = FALSE, quote = FALSE)
+# write.csv(df_rivers_springflood, "Data_produced/05_df_rivers_springflood.csv", 
+#           row.names = FALSE, quote = FALSE)
 ```
 
 
@@ -269,7 +267,7 @@ data = . %>% filter(ID %in% c("P1" , "P3"))
 
 ### c. Save
 ```{r}
-write.csv(df_hydro_summ, "Data_produced/05_df_hydro_summ.csv", row.names = FALSE, quote = FALSE)
+# write.csv(df_hydro_summ, "Data_produced/05_df_hydro_summ.csv", row.names = FALSE, quote = FALSE)
 ```
 
 ### d. Plot temperature
@@ -339,7 +337,7 @@ df_plank_summ <- df_plank %>%
 
 ### d. Save
 ```{r}
-write.csv(df_plank_summ, "Data_produced/05_df_plank_summ.csv", row.names = FALSE, quote = FALSE)
+# write.csv(df_plank_summ, "Data_produced/05_df_plank_summ.csv", row.names = FALSE, quote = FALSE)
 ```
 
 ### e. Plot medians
