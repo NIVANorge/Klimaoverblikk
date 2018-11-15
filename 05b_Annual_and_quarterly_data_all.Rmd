@@ -22,6 +22,9 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
+library(zoo)
+#install.packages("tidyquant")
+library(tidyquant)
 # library(pander)
 ```
 
@@ -71,6 +74,31 @@ df_rivers$Time <- with(df_rivers, lubridate::ymd(paste(Year, Month, "15")))
 # Add "_" in column names (TrspTot Ca -> TrspTot_Ca)
 colnames(df_rivers) <- sub(" ", "_", colnames(df_rivers), fixed = TRUE)
 
+# endre rekkefølge på elver fra nord til sør for ggplot
+df_rivers$Station_name <- factor(df_rivers$Station_name, levels = c("Glomma ved Sarpsfoss", "Drammenselva", "Numedalslågen", "Skienselva", "Søndeledelva v. Søndeleddammen", "Storelva v/ Nes verk", "Nidelva ovenf. Rygene", "Otra"))
+
+# endre navn på elver
+sel <- levels(df_rivers$Station_name) == "Glomma ved Sarpsfoss"; sum(sel)
+levels(df_rivers$Station_name)[sel] <- "Glomma"
+
+sel <- levels(df_rivers$Station_name) == "Søndeledelva v. Søndeleddammen"; sum(sel)
+levels(df_rivers$Station_name)[sel] <- "Gjerstadelva"
+
+sel <- levels(df_rivers$Station_name) == "Storelva v/ Nes verk"; sum(sel)
+levels(df_rivers$Station_name)[sel] <- "Storelva"
+
+sel <- levels(df_rivers$Station_name) == "Nidelva ovenf. Rygene"; sum(sel)
+levels(df_rivers$Station_name)[sel] <- "Nidelva"
+
+#levels(df_rivers$Station_name)
+
+# Dropp Otra fra plot og analyser (nedstrøms)
+df_rivers <- df_rivers %>% 
+  filter(Station_name != "Otra") %>% 
+  droplevels()
+
+print (df_rivers)
+
 # Table of available data for each river
 tb <- df_rivers %>% 
   gather("Variable", Value, TrspTot_TOTN:DisTot) %>%
@@ -83,7 +111,7 @@ tb
 ### b. Local rivers, plot monthly mean discharge by station
 ```{r}
 gg <- df_rivers %>%
-  filter(substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor")) %>%
+  filter(substr(Station_name, 1, 4) %in% c("Nide","Gjer","Stor")) %>%
   group_by(Station_name, Month) %>%
   summarise(Mean = mean(DisTot, na.rm = TRUE), 
             Q10 = quantile(DisTot, 0.1, na.rm = TRUE), 
@@ -100,7 +128,7 @@ gg
 Including Otra
 ```{r}
 gg <- df_rivers %>%
-  filter(!substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor")) %>%
+  filter(!substr(Station_name, 1, 4) %in% c("Nide","Gjer","Stor")) %>%
   group_by(Station_name, Month) %>%
   summarise(Mean = mean(DisTot, na.rm = TRUE), 
             Q10 = quantile(DisTot, 0.1, na.rm = TRUE), 
@@ -142,14 +170,82 @@ df_rivers_summ_q <- df %>%
 ### e1. Plot annual data  
 Also testing out plotting moving average using tidyquant::geom_ma  
 ```{r}
-# library(zoo)
-# install.packages("tidyquant")
-library(tidyquant)
+# geom_ma: sma= simple moving average, rolling mean over a period defined by n
 
+str (df_rivers_summ_a)
+
+# Annual time series plot with one variable and 5-year moving average
 ggplot(df_rivers_summ_a, aes(Year, DisTot/1E6, color = River_type)) +
   geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
   geom_point() + 
-  facet_grid(River_type~., scales = "free_y", labeller = label_both)
+  facet_grid(River_type~., scales = "free_y") +
+  labs(x = "Year", y= "Discharge", color = "River type")
+
+ggplot(df_rivers_summ_a, aes(Year, TrspTot_TOTN/1E6, color = River_type)) +
+  geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+  geom_point() + 
+  facet_grid(River_type~., scales = "free_y") +
+  labs(x = "Year", y= "Transport TotN (/1E6)", color = "River type")
+
+# NB! NO3 virker ikke
+ggplot(df_rivers_summ_a, aes(Year, "TrspTot_NO3-N", color = River_type)) +
+  geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+  geom_point() + 
+  facet_grid(River_type~., scales = "free_y") +
+  labs(x = "Year", y= "Transport TotN (/1E6)", color = "River type")
+
+ggplot(df_rivers_summ_a, aes(Year, TrspTot_TOTP/1E6, color = River_type)) +
+  geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+  geom_point() + 
+  facet_grid(River_type~., scales = "free_y") +
+  labs(x = "Year", y= "Transport TotP (/1E6)", color = "River type")
+
+ggplot(df_rivers_summ_a, aes(Year, TrspTot_TOC/1E6, color = River_type)) +
+  geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+  geom_point() + 
+  facet_grid(River_type~., scales = "free_y") +
+  labs(x = "Year", y= "Transport TOC (/1E6)", color = "River type")
+
+# Annual time series plot with several variables for each river type (no sense in faceting because of the large difference - log??)
+df_rivers_summ_a %>%
+  gather("Variable", "Value"/1E6, TrspTot_TOTN:DisTot) %>%
+  ggplot(aes(Year, Value)) +
+    geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) + 
+    geom_point() +
+    facet_grid(Variable~River_type, scales = "free_y", labeller = label_both)
+    labs(x = "Year", y= "Transports")
+
+# blir knotetet    
+df_rivers_summ_a %>%
+  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  ggplot(aes(Year, Value)) +
+    geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) + 
+    geom_point() +
+    facet_wrap(~Variable *River_type, scales = "free_y", labeller = label_both)
+    labs(x = "Year", y= "Transports")
+
+facet_wrap(~Variable *Rivertype)
+    
+# Distant - må fikse skalering
+gg2 <- df_rivers_summ_a %>%
+  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  filter(River_type %in% "Distant") %>%
+  ggplot(aes(Year, Value)) + 
+    geom_point() +
+   geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+    facet_grid(Variable~., scales = "free_y", , labeller = label_both)
+gg2
+
+# Local - må fikse skalering
+gg2 <- df_rivers_summ_a %>%
+  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  filter(River_type %in% "Local") %>%
+  ggplot(aes(Year, Value)) + 
+    geom_point() +
+   geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+    facet_grid(Variable~., scales = "free_y", , labeller = label_both)
+gg2
+
 
 ```
 
@@ -308,6 +404,10 @@ df_hydro_summ_a$Depth <- factor(df_hydro_summ_a$Depth,
                                  levels = c("Surface", "Intermediate", "Deep"))
 df_hydro_summ_q$Depth <- factor(df_hydro_summ_q$Depth, 
                                  levels = c("Surface", "Intermediate", "Deep"))
+
+# summere til DIN
+df_hydro_summ_a$DIN <- df_hydro_summ_a$NO2_NO3 + df_hydro_summ_a$NH4
+
 ```
 
 ### c. Save
@@ -319,22 +419,123 @@ write.csv(df_hydro_summ_q, "Data_produced/05_df_hydro_summ_q.csv", row.names = F
 ### d1. Plot temperature, annual
 ```{r}
 ggplot(df_hydro_summ_a, aes(Year, Temperatur, color = Depth)) +
-  geom_smooth(method = "lm") + geom_point()
+  geom_smooth() + 
+  geom_point()
 ```
 
 ### d2. Plot temperature by quarter
 ```{r}
+#str (df_hydro_summ_q)
+
+# heller bruke sma?
+#til geom_smooth: method = "lm"
+
 ggplot(df_hydro_summ_q, aes(Year, Temperatur, color = Depth)) +
-  geom_smooth(method = "lm") + geom_point() +
+  geom_smooth() + 
+  geom_point() +
   facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, Salt, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, O2, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, NO2_NO3, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, NH4, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, SiO4, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, Klorofyll, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, TotP, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, TotN, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, POC, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, PON, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, POP, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, TSM, color = Depth)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+ggplot(df_hydro_summ_q, aes(Year, -Siktdyp)) +
+  geom_smooth(method = "lm") + 
+  geom_point() +
+  facet_grid(.~Quarter, labeller = label_both)
+
+# plot variable by quartes vr year
+#gg1 <- df_hydro_summ_q %>% 
+ # filter(Depth %in% "Surface") %>% 
+  #ggplot  (aes(Year, Temperatur)) +
+  #geom_smooth() + geom_point() +
+   #facet_wrap(~Quarter)
+#gg1
+
 ```
 
-### e. Plot some nutrients etc.
+### e. Plot flere varaibler i samme plot.
 ```{r}
+str (df_hydro_summ_a)
+
+
+# annual
+df_hydro_summ_a %>%
+  gather("Var", "Concentration", Temperatur, Salt) %>%
+  ggplot(aes(Year, Concentration, color = Depth)) +
+    geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) + 
+    geom_point() +
+    facet_grid(Var~., scales = "free_y", labeller = label_both)
+
+df_hydro_summ_a %>%
+  gather("Var", "Concentration", Temperatur, Salt) %>%
+  ggplot(aes(Year, Concentration, color = Depth)) +
+    geom_smooth(method = "lm") + 
+    geom_point() +
+    facet_grid(Var~., scales = "free_y", labeller = label_both)
+
+# by quarters
 df_hydro_summ_q %>%
   gather("Var", "Concentration", NO2_NO3, TotP, TotN, TSM) %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
-    geom_smooth(method = "lm") + geom_point() +
+    geom_smooth(method = "lm") + 
+    geom_point() +
     facet_grid(Var~Quarter, scales = "free_y", labeller = label_both)
 ```
 
