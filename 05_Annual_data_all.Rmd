@@ -263,7 +263,6 @@ gg1 <- df_hydro_summ %>%
 
 gg1
 
-data = . %>% filter(ID %in% c("P1" , "P3"))
 
 ```
 

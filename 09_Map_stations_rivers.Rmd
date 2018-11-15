@@ -71,7 +71,7 @@ plot(y~x, type = "l", coastline_skagerrak_coords_longlat,
 
 
 
-# eksempel med googlemap (ikke tilpasset): http://yarkerconsulting.com/index.php/blog/15-google-maps-and-r
+# eksempel med googlemap fra Hordaklim (ikke tilpasset): http://yarkerconsulting.com/index.php/blog/15-google-maps-and-r
 library(RgoogleMaps)
 library(ggplot2)
 library(ggmap)

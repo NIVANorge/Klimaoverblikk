@@ -215,7 +215,7 @@ df_rivers_summ_a %>%
     facet_grid(Variable~River_type, scales = "free_y", labeller = label_both)
     labs(x = "Year", y= "Transports")
 
-# blir knotetet    
+# blir knotete   
 df_rivers_summ_a %>%
   gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
   ggplot(aes(Year, Value)) +
