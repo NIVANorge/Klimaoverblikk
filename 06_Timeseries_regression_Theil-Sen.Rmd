@@ -11,12 +11,14 @@ output:
 ---
 
 Non-parametric tests for trends over time  
-* Performed for seasons separately (note that hydrography + plankton seasons start in December)  
+* Performed both on 
+    + Annual data (ending in _a, plus rivergroup_springflood)
+    + Seasonal data (for seasons separately)
+* For seasonal data, note that hydrography + plankton seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
 * Uses data from script 05  
 * Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
-__NOTE: Have yet to include timing of spring flood (df_rivers_springflood) and DCA scores.__
-  
 
+  
 DHJ: you borrowed much of this code from   'file:///C:/Data/Referanseelver_2018/Climate/05_Analysis_gridded_data_MK_TheilSen.html'    
 
 
@@ -89,7 +91,7 @@ df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
 df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
 ```
 
-### b. Collect quarterly data  
+### d. Collect quarterly data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
@@ -120,6 +122,13 @@ df3 <- df_plank_summ_q %>%
 head(df3)
 
 dat_q <- rbind(df1, df2, df3) %>% as.data.frame()
+```
+
+e. Save collected data
+```{r}
+write.csv(dat_a, "Data_produced/06_dat_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(dat_q, "Data_produced/06_dat_q.csv", row.names = FALSE, quote = FALSE)
+
 ```
 
 ## 3a. Define trend analysis functions
@@ -217,12 +226,20 @@ theme_dotplot <- theme_bw(14) +
 qrt <- 2        
 df <- df_result_q %>% filter(Quarter == qrt) 
 
-
+ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), size = factor(P < 0.05))) +
+	geom_point(color = "blue") +
+	scale_x_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+  scale_size_manual(values = c(2,4)) +
+	# scale_size_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n") +
+	ggtitle(paste("Changes in quarter", qrt))
 ```
 
 
 ### c. Plot for all seasons
-```{r, fig.height=9}
+```{r, fig.width = 7, fig.height=9}
 df_mean <- df_result_q  %>%
   group_by(Variable) %>%
   summarise(Mean_change = mean(Change_perc)) %>%
@@ -231,15 +248,18 @@ df_mean <- df_result_q  %>%
 df <- df_result_q 
 df$Variable <- factor(df$Variable, levels = df_mean$Variable)
 df$Quarter <- factor(df$Quarter)
+df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+# range(df$Change_perc)
 
 cols <- RColorBrewer::brewer.pal(4, "RdBu")[c(3,4,1,2)]
 # create the plot
-ggplot(df, aes(x = Change_perc, y = Variable, color = Quarter)) +
+ggplot(df, aes(x = Change_perc, y = Variable, fill = Quarter, size = P)) +
   geom_vline(xintercept = 0) +
-	geom_point(size = 2) +
+	geom_point(pch = 21) +
   # scale_color_brewer(palette = "RdBu", direction = -1) +
-  scale_color_manual(values = cols) +
-	scale_x_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+  scale_fill_manual(values = cols) +
+  scale_size_manual("Trend test", values = c(2.5,4)) +
+	scale_x_continuous(limits = c(-11, 7), breaks = seq(-10, 6, 2)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n")
@@ -247,12 +267,18 @@ ggplot(df, aes(x = Change_perc, y = Variable, color = Quarter)) +
 ```
 
 ### d. Plot trends for annual data
-```{r, fig.height=9}
+```{r, fig.width = 7, fig.height=9}
 # create the plot
-ggplot(df_result_a, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
-	geom_point(color = "blue") +
-	scale_x_continuous(limits = c(-12, 4),
-		breaks = seq(-12, 4, 2)) +
+df <- df_result_a
+df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+# range(df$Change_perc)
+
+ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, size = P)) +
+  geom_vline(xintercept = 0) +
+	geom_point(pch = 21) +
+  scale_fill_manual("Trend test", values = c("lightblue", "firebrick")) +
+  scale_size_manual("Trend test", values = c(2.5,4)) +
+	scale_x_continuous(limits = c(-11, 4), breaks = seq(-10, 4, 2)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n") +
