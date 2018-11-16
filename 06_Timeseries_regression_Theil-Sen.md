@@ -30,7 +30,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Attaching packages ------------------------------------------------------------------------------------------ tidyverse 1.2.1 --
+## -- Attaching packages -------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
 ```
 
 ```
@@ -41,7 +41,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Conflicts --------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## -- Conflicts ----------------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()
 ```
@@ -135,7 +135,7 @@ df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
 df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
 ```
 
-### b. Collect quarterly data  
+### d. Collect quarterly data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 
@@ -192,6 +192,13 @@ head(df3)
 
 ```r
 dat_q <- rbind(df1, df2, df3) %>% as.data.frame()
+```
+
+e. Save collected data
+
+```r
+write.csv(dat_a, "Data_produced/06_dat_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(dat_q, "Data_produced/06_dat_q.csv", row.names = FALSE, quote = FALSE)
 ```
 
 ## 3a. Define trend analysis functions
@@ -323,7 +330,7 @@ ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), size = facto
 ## Warning: Removed 1 rows containing missing values (geom_point).
 ```
 
-![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 ### c. Plot for all seasons
@@ -354,7 +361,7 @@ ggplot(df, aes(x = Change_perc, y = Variable, fill = Quarter, size = P)) +
 	ylab("Variable\n")
 ```
 
-![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 ### d. Plot trends for annual data
 
@@ -376,5 +383,5 @@ ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, si
 	ggtitle("Changes in annual means")
 ```
 
-![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
