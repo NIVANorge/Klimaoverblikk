@@ -18,25 +18,61 @@ Plots are saved in folder [Figures_07](Figures_07)
 Note: plotting uses a file [07_Plotdata.csv](07_Plotdata.csv) (manually made in Excel) to add y labels; this file can be extedned to also included headers to be added to each plot  
 
 ## 0. Libraries
-```{r}
+
+```r
 library(tidyverse)
+```
+
+```
+## -- Attaching packages -------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+```
+
+```
+## v ggplot2 2.2.1     v purrr   0.2.4
+## v tibble  1.4.2     v dplyr   0.7.6
+## v tidyr   0.8.1     v stringr 1.3.1
+## v readr   1.1.1     v forcats 0.3.0
+```
+
+```
+## -- Conflicts ----------------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
+```
+
+```r
 library(readxl)
 library(broom)
 library(lubridate)
+```
+
+```
+## 
+## Attaching package: 'lubridate'
+```
+
+```
+## The following object is masked from 'package:base':
+## 
+##     date
+```
+
+```r
 library(openair)  
 
 # library(pander)
 ```
 
 ## 1. Data  
-```{r}
+
+```r
 dat_a <- read.csv("Data_produced/06_dat_a.csv")
 dat_q <- read.csv("Data_produced/06_dat_q.csv")
-
 ```
 
 ## 2. Test plot  
-```{r}
+
+```r
 varname <- "Dinoflagellater_med"
 varname <- "Tetthet_Deep"
 df <- dat_a %>% filter(Variable %in% varname)
@@ -45,12 +81,18 @@ df$date <- ymd(paste(df$Year, "07 01"))
 # test plot
 TheilSen(df, pollutant = "Value", main = varname, ylab = "Median during year",
          shade = "transparent", pch = 21, cex = 1.2, data.col = "black", fill = "firebrick")
+```
 
 ```
+## [1] "Taking bootstrap samples. Please wait."
+```
+
+![](07_Plots_annual_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
 
 
 ## 3. Define function for making and saving plots   
-```{r}
+
+```r
 # write.table(tibble(unique(dat_a$Variable)), "clipboard", row.names = FALSE, quote = FALSE)
 # plotdata <- read_xls("07_Plotdata.xlsx", sheet = 1)
 plotdata <- read.csv2("07_Plotdata.csv", stringsAsFactors = FALSE)
@@ -69,12 +111,12 @@ TheilSen_save <- function(varname, ylabel){
 # i <- 73
 # i <- 1
 # TheilSen_save(plotdata[i,"Variable"], plotdata[i, "Ylabel"])
-
 ```
 
 ## 4. Actually produce plots (takes perhaps 10-15 minutes)  
 Set 'produce_plots <- TRUE' in order to actually produce plots
-```{r}
+
+```r
 produce_plots <- FALSE
 
 if (produce_plots){
@@ -83,8 +125,6 @@ if (produce_plots){
     Sys.sleep(2)
   }
 }
-
-
 ```
 
 
