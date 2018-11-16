@@ -1,0 +1,77 @@
+Variable;Ylabel
+River_Distant_TOTN;Total load
+River_Local_TOTN;Total load
+River_Distant_NO3.N;Total load
+River_Local_NO3.N;Total load
+River_Distant_TOTP;Total load
+River_Local_TOTP;Total load
+River_Distant_TOC;Total load
+River_Local_TOC;Total load
+River_Distant_DisTot;Total volume
+River_Local_DisTot;Total volume
+River_Distant_Floodmax;Monthly volume
+River_Local_Floodmax;Monthly volume
+River_Distant_FloodmaxMonth;Month
+River_Local_FloodmaxMonth;Month
+Temperatur_Deep;Degrees C
+Temperatur_Intermediate;Degrees C
+Temperatur_Surface;Degrees C
+Salt_Deep;Salinity (PSU)
+Salt_Intermediate;Salinity (PSU)
+Salt_Surface;Salinity (PSU)
+Tetthet_Deep;Density
+Tetthet_Intermediate;Density
+Tetthet_Surface;Density
+O2_Deep;Concentration
+O2_Intermediate;Concentration
+O2_Surface;Concentration
+O2_metning_Deep;Concentration
+O2_metning_Intermediate;Concentration
+O2_metning_Surface;Concentration
+PO4_Deep;Concentration
+PO4_Intermediate;Concentration
+PO4_Surface;Concentration
+NO2_Deep;Concentration
+NO2_Intermediate;Concentration
+NO2_Surface;Concentration
+NO3_Deep;Concentration
+NO3_Intermediate;Concentration
+NO3_Surface;Concentration
+NO2_NO3_Deep;Concentration
+NO2_NO3_Intermediate;Concentration
+NO2_NO3_Surface;Concentration
+NH4_Deep;Concentration
+NH4_Intermediate;Concentration
+NH4_Surface;Concentration
+SiO4_Deep;Concentration
+SiO4_Intermediate;Concentration
+SiO4_Surface;Concentration
+N_P_Deep;Concentration
+N_P_Intermediate;Concentration
+N_P_Surface;Concentration
+Klorofyll_Deep;Concentration
+Klorofyll_Intermediate;Concentration
+Klorofyll_Surface;Concentration
+TotP_Deep;Concentration
+TotP_Intermediate;Concentration
+TotP_Surface;Concentration
+TotN_Deep;Concentration
+TotN_Intermediate;Concentration
+TotN_Surface;Concentration
+POP_Deep;Concentration
+POP_Intermediate;Concentration
+POP_Surface;Concentration
+PON_Deep;Concentration
+PON_Intermediate;Concentration
+PON_Surface;Concentration
+POC_Deep;Concentration
+POC_Intermediate;Concentration
+POC_Surface;Concentration
+TSM_Deep;Concentration
+TSM_Intermediate;Concentration
+TSM_Surface;Concentration
+Siktdyp_Surface;Depth (m)
+Kiselalger_med;Density
+Dinoflagellater_med;Density
+Flagellater_med;Density
+Total_med;Density

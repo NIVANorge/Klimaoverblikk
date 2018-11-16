@@ -1,0 +1,75 @@
+---
+title: "07 Plots of annual data"
+output: html_document
+---
+
+
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(broom)
+library(lubridate)
+library(openair)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
+
+# library(pander)
+```
+
+## 1. Data  
+```{r}
+dat_a <- read.csv("Data_produced/06_dat_a.csv")
+dat_q <- read.csv("Data_produced/06_dat_q.csv")
+
+```
+
+## 2. Test plot  
+```{r}
+varname <- "Dinoflagellater_med"
+varname <- "Tetthet_Deep"
+df <- dat_a %>% filter(Variable %in% varname)
+df$date <- ymd(paste(df$Year, "07 01"))
+
+# test plot
+TheilSen(df, pollutant = "Value", main = varname, ylab = "Median during year",
+         shade = "transparent", pch = 21, cex = 1.2, data.col = "black", fill = "firebrick")
+
+```
+
+```{r}
+# write.table(tibble(unique(dat_a$Variable)), "clipboard", row.names = FALSE, quote = FALSE)
+# plotdata <- read_xls("07_Plotdata.xlsx", sheet = 1)
+plotdata <- read.csv2("07_Plotdata.csv", stringsAsFactors = FALSE)
+
+TheilSen_save <- function(varname, ylabel){
+  df <- dat_a %>% filter(Variable %in% varname)
+  df$date <- ymd(paste(df$Year, "07 01"))
+  png(sprintf("Figures_07/Annual_timeseries_%s.png", varname), width = 15, height = 10, units = 'cm',  
+    res = 300, type="cairo", antialias="default")
+  TheilSen(df, pollutant = "Value", main = varname, ylab = ylabel,
+   shade = "transparent", pch = 21, cex = 1.2, data.col = "black", fill = "firebrick")
+  dev.off()
+}
+
+# TheilSen_save("Flagellater_med", "Density")
+i <- 73
+i <- 1
+TheilSen_save(plotdata[i,"Variable"], plotdata[i, "Ylabel"])
+
+for (i in 2:5){
+  TheilSen_save(plotdata[i,"Variable"], plotdata[i, "Ylabel"])
+  Sys.sleep(2)
+}
+
+
+for (i in 6:nrow(plotdata)){
+  TheilSen_save(plotdata[i,"Variable"], plotdata[i, "Ylabel"])
+  Sys.sleep(2)
+}
+
+
+
+```
+
+
+
