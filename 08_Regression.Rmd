@@ -1,0 +1,236 @@
+---
+title: "08 Regression models"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged   
+---
+
+
+Regression analysis of (so far) hydrographic and plankton variables
+  
+Check out package dynlm for including lagged variables - see https://stackoverflow.com/a/13096824/1734247 
+
+## 0. Libraries
+```{r}
+library(tidyverse)
+library(readxl)
+library(MASS)
+# install.packages("visreg")
+library(visreg)
+
+
+# library(pander)
+```
+
+## 1. Data  
+### a. Read
+```{r}
+dat_a <- read.csv("Data_produced/06_dat_a.csv")
+dat_q <- read.csv("Data_produced/06_dat_q.csv")
+```
+
+### b. Check variables
+```{r}
+unique(dat_a$Variable)
+```
+
+### c. Make data on broad format
+```{r}
+dat <- 
+  dat_a %>% 
+  spread(Variable, Value)
+```
+
+### d. Add NAO data
+```{r}
+df_nao <- read.table("https://climatedataguide.ucar.edu/sites/default/files/nao_station_djfm.txt", skip = 1, header = FALSE)
+colnames(df_nao) <- c("Year", "Winter_NAO")
+
+dat <- left_join(dat, df_nao)
+```
+
+
+## 2. Hydrographic data, surface
+
+### a. Surface salinity
+```{r}
+full_model <- lm(Salt_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+### b. Surface Total N
+```{r}
+full_model <- lm(TotN_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+
+### c. Surface Total P
+```{r}
+full_model <- lm(TotP_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTP + River_Distant_TOTP, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+### d. Surface TSM
+```{r}
+full_model <- lm(TSM_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+```
+
+### e. Siktedyp
+```{r}
+full_model <- lm(Siktdyp_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN + River_Local_TOTP + River_Distant_TOTP + 
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+visreg(step_model, points = list(cex = 1))
+
+```
+
+## 3. Hydrographic data, intermediate
+
+### a. Intermediate salinity
+```{r}
+full_model <- lm(Salt_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+### b. Intermediate Total N
+```{r}
+full_model <- lm(TotN_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+
+### c. Intermediate Total P
+```{r}
+full_model <- lm(TotP_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTP + River_Distant_TOTP, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+### d. Intermediate TSM
+```{r}
+full_model <- lm(TSM_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+# par(mfrow = c(2,2), mar = c(4,5,2,1))
+# plot(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+visreg(step_model, points = list(cex = 1))
+```
+
+
+## 4. Hydrographic data, deep
+
+### a. Deep salinity
+```{r}
+full_model <- lm(Salt_Deep ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+### b. Deep Total N
+```{r}
+full_model <- lm(TotN_Deep ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+```
+
+
+### c. Deep Total P
+```{r}
+full_model <- lm(TotP_Deep ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTP + River_Distant_TOTP, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+visreg(step_model, points = list(cex = 1))
+
+```
+
+### d. Deep TSM
+```{r}
+full_model <- lm(TSM_Deep ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+# par(mfrow = c(2,2), mar = c(4,5,2,1))
+# plot(step_model)
+visreg(step_model, points = list(cex = 1))
+```
+
+## 5. Plankton
+### a. Kiselalger
+```{r}
+full_model <- lm(Kiselalger_med ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN + River_Local_TOTP + River_Distant_TOTP + 
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+visreg(step_model, points = list(cex = 1))
+
+```
+
+### b. Dinoflagellater
+```{r}
+full_model <- lm(Dinoflagellater_med ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN + River_Local_TOTP + River_Distant_TOTP + 
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+visreg(step_model, points = list(cex = 1))
+
+```
+
+### c. Flagellater
+```{r}
+full_model <- lm(Dinoflagellater_med ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+                 River_Local_TOTN + River_Distant_TOTN + River_Local_TOTP + River_Distant_TOTP + 
+                 River_Local_TOC + River_Distant_TOC, data = dat)
+# summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+visreg(step_model, points = list(cex = 1))
+
+```

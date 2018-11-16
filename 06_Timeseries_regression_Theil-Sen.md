@@ -11,12 +11,14 @@ output:
 ---
 
 Non-parametric tests for trends over time  
-* Performed for seasons separately (note that hydrography + plankton seasons start in December)  
+* Performed both on 
+    + Annual data (ending in _a, plus rivergroup_springflood)
+    + Seasonal data (for seasons separately)
+* For seasonal data, note that hydrography + plankton seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
 * Uses data from script 05  
 * Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
-__NOTE: Have yet to include timing of spring flood (df_rivers_springflood) and DCA scores.__
-  
 
+  
 DHJ: you borrowed much of this code from   'file:///C:/Data/Referanseelver_2018/Climate/05_Analysis_gridded_data_MK_TheilSen.html'    
 
 
@@ -28,7 +30,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Attaching packages --------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+## -- Attaching packages -------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --
 ```
 
 ```
@@ -39,7 +41,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Conflicts ------------------------------------------------------------------------------------------ tidyverse_conflicts() --
+## -- Conflicts ----------------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()
 ```
@@ -133,7 +135,7 @@ df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
 df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
 ```
 
-### b. Collect quarterly data  
+### d. Collect quarterly data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 
@@ -171,7 +173,7 @@ head(df2)
 
 <div data-pagedtable="false">
   <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[2],"type":["int"],"align":["right"]},{"label":["Quarter"],"name":[3],"type":["int"],"align":["right"]},{"label":["Value"],"name":[4],"type":["dbl"],"align":["right"]}],"data":[{"1":"Temperatur_Deep","2":"1990","3":"1","4":"6.827000","_rn_":"1"},{"1":"Temperatur_Intermediate","2":"1990","3":"1","4":"6.507000","_rn_":"2"},{"1":"Temperatur_Surface","2":"1990","3":"1","4":"5.990500","_rn_":"3"},{"1":"Temperatur_Deep","2":"1990","3":"2","4":"6.749625","_rn_":"4"},{"1":"Temperatur_Intermediate","2":"1990","3":"2","4":"6.850250","_rn_":"5"},{"1":"Temperatur_Surface","2":"1990","3":"2","4":"7.659833","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[2],"type":["int"],"align":["right"]},{"label":["Quarter"],"name":[3],"type":["int"],"align":["right"]},{"label":["Value"],"name":[4],"type":["dbl"],"align":["right"]}],"data":[{"1":"Temperatur_Deep","2":"1989","3":"4","4":"7.153000","_rn_":"1"},{"1":"Temperatur_Intermediate","2":"1989","3":"4","4":"7.082500","_rn_":"2"},{"1":"Temperatur_Surface","2":"1989","3":"4","4":"6.141667","_rn_":"3"},{"1":"Temperatur_Deep","2":"1990","3":"1","4":"6.590250","_rn_":"4"},{"1":"Temperatur_Intermediate","2":"1990","3":"1","4":"6.320250","_rn_":"5"},{"1":"Temperatur_Surface","2":"1990","3":"1","4":"6.074167","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 
@@ -184,12 +186,19 @@ head(df3)
 
 <div data-pagedtable="false">
   <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[2],"type":["int"],"align":["right"]},{"label":["Quarter"],"name":[3],"type":["int"],"align":["right"]},{"label":["Value"],"name":[4],"type":["int"],"align":["right"]}],"data":[{"1":"Kiselalger_med","2":"1994","3":"1","4":"21050","_rn_":"1"},{"1":"Kiselalger_med","2":"1994","3":"2","4":"1109400","_rn_":"2"},{"1":"Kiselalger_med","2":"1994","3":"3","4":"113800","_rn_":"3"},{"1":"Kiselalger_med","2":"1994","3":"4","4":"183000","_rn_":"4"},{"1":"Kiselalger_med","2":"1995","3":"1","4":"10400","_rn_":"5"},{"1":"Kiselalger_med","2":"1995","3":"2","4":"97100","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Year"],"name":[2],"type":["int"],"align":["right"]},{"label":["Quarter"],"name":[3],"type":["int"],"align":["right"]},{"label":["Value"],"name":[4],"type":["int"],"align":["right"]}],"data":[{"1":"Kiselalger_med","2":"1993","3":"4","4":"18850","_rn_":"1"},{"1":"Kiselalger_med","2":"1994","3":"1","4":"570600","_rn_":"2"},{"1":"Kiselalger_med","2":"1994","3":"2","4":"34200","_rn_":"3"},{"1":"Kiselalger_med","2":"1994","3":"3","4":"148400","_rn_":"4"},{"1":"Kiselalger_med","2":"1994","3":"4","4":"15650","_rn_":"5"},{"1":"Kiselalger_med","2":"1995","3":"1","4":"194100","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 
 ```r
 dat_q <- rbind(df1, df2, df3) %>% as.data.frame()
+```
+
+e. Save collected data
+
+```r
+write.csv(dat_a, "Data_produced/06_dat_a.csv", row.names = FALSE, quote = FALSE)
+write.csv(dat_q, "Data_produced/06_dat_q.csv", row.names = FALSE, quote = FALSE)
 ```
 
 ## 3a. Define trend analysis functions
@@ -263,7 +272,7 @@ df_result_q %>% arrange(Change_perc) %>% tail()
 
 <div data-pagedtable="false">
   <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Quarter"],"name":[2],"type":["chr"],"align":["left"]},{"label":["P"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["Estimate"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Change_perc"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"POC_Deep","2":"2","3":"5.813974e-04","4":"0.2733281","5":"3.555487","_rn_":"283"},{"1":"POC_Deep","2":"1","3":"6.225244e-05","4":"0.2714286","5":"3.961015","_rn_":"284"},{"1":"River_Local_TOTP","2":"2","3":"9.103815e-02","4":"0.1780480","5":"4.202670","_rn_":"285"},{"1":"River_Local_TOTP","2":"1","3":"1.839449e-02","4":"0.1333004","5":"4.751949","_rn_":"286"},{"1":"River_Local_TOTP","2":"3","3":"2.295842e-02","4":"0.1832913","5":"5.213545","_rn_":"287"},{"1":"River_Local_TOTP","2":"4","3":"2.295842e-02","4":"0.2449224","5":"6.411754","_rn_":"288"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Quarter"],"name":[2],"type":["chr"],"align":["left"]},{"label":["P"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["Estimate"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Change_perc"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"PON_Deep","2":"1","3":"0.0207649985","4":"0.03222754","5":"3.159562","_rn_":"283"},{"1":"POC_Deep","2":"1","3":"0.0003069829","4":"0.25250001","5":"3.295730","_rn_":"284"},{"1":"River_Local_TOTP","2":"2","3":"0.0910381488","4":"0.17804801","5":"4.202670","_rn_":"285"},{"1":"River_Local_TOTP","2":"1","3":"0.0183944919","4":"0.13330035","5":"4.751949","_rn_":"286"},{"1":"River_Local_TOTP","2":"3","3":"0.0229584221","4":"0.18329127","5":"5.213545","_rn_":"287"},{"1":"River_Local_TOTP","2":"4","3":"0.0229584221","4":"0.24492239","5":"6.411754","_rn_":"288"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 
@@ -273,7 +282,7 @@ df_result_q %>% arrange(Change_perc) %>% head()
 
 <div data-pagedtable="false">
   <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Quarter"],"name":[2],"type":["chr"],"align":["left"]},{"label":["P"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["Estimate"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Change_perc"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"Dinoflagellater_med","2":"4","3":"1.482216e-05","4":"-5470.000","5":"-11.019339","_rn_":"1"},{"1":"Flagellater_med","2":"2","3":"2.186816e-03","4":"-187587.917","5":"-10.989333","_rn_":"2"},{"1":"Dinoflagellater_med","2":"3","3":"4.016441e-04","4":"-6813.158","5":"-9.084211","_rn_":"3"},{"1":"Total_med","2":"2","3":"3.670769e-03","4":"-199717.500","5":"-9.064101","_rn_":"4"},{"1":"Total_med","2":"1","3":"5.614106e-02","4":"-57248.222","5":"-7.943695","_rn_":"5"},{"1":"Flagellater_med","2":"1","3":"6.283882e-02","4":"-49191.213","5":"-7.684086","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Variable"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Quarter"],"name":[2],"type":["chr"],"align":["left"]},{"label":["P"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["Estimate"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["Change_perc"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"Dinoflagellater_med","2":"2","3":"7.234396e-04","4":"-6645.0","5":"-10.889872","_rn_":"1"},{"1":"Dinoflagellater_med","2":"4","3":"9.277585e-05","4":"-2607.5","5":"-10.480305","_rn_":"2"},{"1":"Dinoflagellater_med","2":"3","3":"1.766338e-04","4":"-7185.0","5":"-10.177054","_rn_":"3"},{"1":"Total_med","2":"1","3":"3.939705e-02","4":"-110731.5","5":"-10.018143","_rn_":"4"},{"1":"Flagellater_med","2":"1","3":"3.033737e-02","4":"-75360.0","5":"-9.376633","_rn_":"5"},{"1":"Total_med","2":"4","3":"6.020047e-03","4":"-54309.0","5":"-8.224150","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 
@@ -305,7 +314,23 @@ theme_dotplot <- theme_bw(14) +
 ```r
 qrt <- 2        
 df <- df_result_q %>% filter(Quarter == qrt) 
+
+ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), size = factor(P < 0.05))) +
+	geom_point(color = "blue") +
+	scale_x_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+  scale_size_manual(values = c(2,4)) +
+	# scale_size_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n") +
+	ggtitle(paste("Changes in quarter", qrt))
 ```
+
+```
+## Warning: Removed 1 rows containing missing values (geom_point).
+```
+
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 ### c. Plot for all seasons
@@ -319,39 +344,44 @@ df_mean <- df_result_q  %>%
 df <- df_result_q 
 df$Variable <- factor(df$Variable, levels = df_mean$Variable)
 df$Quarter <- factor(df$Quarter)
+df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+# range(df$Change_perc)
 
 cols <- RColorBrewer::brewer.pal(4, "RdBu")[c(3,4,1,2)]
 # create the plot
-ggplot(df, aes(x = Change_perc, y = Variable, color = Quarter)) +
+ggplot(df, aes(x = Change_perc, y = Variable, fill = Quarter, size = P)) +
   geom_vline(xintercept = 0) +
-	geom_point(size = 2) +
+	geom_point(pch = 21) +
   # scale_color_brewer(palette = "RdBu", direction = -1) +
-  scale_color_manual(values = cols) +
-	scale_x_continuous(limits = c(-12, 4), breaks = seq(-12, 4, 2)) +
+  scale_fill_manual(values = cols) +
+  scale_size_manual("Trend test", values = c(2.5,4)) +
+	scale_x_continuous(limits = c(-11, 7), breaks = seq(-10, 6, 2)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n")
 ```
 
-```
-## Warning: Removed 4 rows containing missing values (geom_point).
-```
-
-![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 ### d. Plot trends for annual data
 
 ```r
 # create the plot
-ggplot(df_result_a, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
-	geom_point(color = "blue") +
-	scale_x_continuous(limits = c(-12, 4),
-		breaks = seq(-12, 4, 2)) +
+df <- df_result_a
+df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+# range(df$Change_perc)
+
+ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, size = P)) +
+  geom_vline(xintercept = 0) +
+	geom_point(pch = 21) +
+  scale_fill_manual("Trend test", values = c("lightblue", "firebrick")) +
+  scale_size_manual("Trend test", values = c(2.5,4)) +
+	scale_x_continuous(limits = c(-11, 4), breaks = seq(-10, 4, 2)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n") +
 	ggtitle("Changes in annual means")
 ```
 
-![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 

@@ -23,7 +23,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Attaching packages --------------------------------------------------------------------------------------- tidyverse 1.2.1 --
+## -- Attaching packages ------------------------------------------------------------------------------------------ tidyverse 1.2.1 --
 ```
 
 ```
@@ -34,7 +34,7 @@ library(tidyverse)
 ```
 
 ```
-## -- Conflicts ------------------------------------------------------------------------------------------ tidyverse_conflicts() --
+## -- Conflicts --------------------------------------------------------------------------------------------- tidyverse_conflicts() --
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()
 ```
@@ -561,8 +561,9 @@ Df.Arendal$Time <- ymd_hms(paste(Df.Arendal$Dato, "00:00:00"))   # R's time form
 ```
 
 ### b. Summarize by depth bins and quarter    
-    * Depth bins = 0-10, 10-30, 30-50
-    * Quarters starting with March
+    * Depth bins = 0-10, 10-30, 30-50  
+    * Quarters starting with February, as with plankton data (section 4c)  
+    * For quarters, also see script 04, plot in section 3b  
 
 ```r
 df <- Df.Arendal %>%
@@ -580,14 +581,14 @@ df_hydro_summ_a <- df %>%
 df_hydro_summ_q <- df %>%
   mutate(
     Quarter = case_when(
-      Month %in% 1:2 ~ 1,
-      Month %in% 3:5 ~ 2,
-      Month %in% 6:8 ~ 3,
-      Month %in% 9:11 ~ 4,
-      Month %in% 12 ~ 1),
+      Month %in% 1 ~ 4,
+      Month %in% 2:4 ~ 1,
+      Month %in% 5:7 ~ 2,
+      Month %in% 8:10 ~ 3,
+      Month %in% 11:12 ~ 4),
     Year2 = case_when(
-      Month == 12 ~ Year + 1,
-      Month < 12 ~ Year)
+      Month == 1 ~ Year - 1,
+      Month > 1 ~ Year)
     ) %>%
   group_by(Year2, Quarter, Depth) %>%
   summarize_at(vars(Temperatur:Siktdyp), mean, na.rm = TRUE) %>%
@@ -636,11 +637,11 @@ df_hydro_summ_q %>%
 ```
 
 ```
-## Warning: Removed 57 rows containing non-finite values (stat_smooth).
+## Warning: Removed 58 rows containing non-finite values (stat_smooth).
 ```
 
 ```
-## Warning: Removed 57 rows containing missing values (geom_point).
+## Warning: Removed 58 rows containing missing values (geom_point).
 ```
 
 ![](05b_Annual_and_quarterly_data_all_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
@@ -692,7 +693,7 @@ cat(mean(sel)*100, "% of the data")
 ```
 
 ### c. Summarize data  
-Use quarters starting with February  
+As hydrological data (section 3b), use quarters starting with February (see script 04, plot in section 3b) 
 
 ```r
 df_plank_summ_a <- df_plank %>%
@@ -705,14 +706,14 @@ df_plank_summ_a <- df_plank %>%
 df_plank_summ_q <- df_plank %>%
   mutate(
     Quarter = case_when(
-      Month %in% 1:2 ~ 1,
-      Month %in% 3:5 ~ 2,
-      Month %in% 6:8 ~ 3,
-      Month %in% 9:11 ~ 4,
-      Month %in% 12 ~ 1),
+      Month %in% 1 ~ 4,
+      Month %in% 2:4 ~ 1,
+      Month %in% 5:7 ~ 2,
+      Month %in% 8:10 ~ 3,
+      Month %in% 11:12 ~ 4),
     Year2 = case_when(
-      Month == 12 ~ Year + 1,
-      Month < 12 ~ Year),
+      Month == 1 ~ Year - 1,
+      Month > 1 ~ Year),
     Total = Kiselalger + Dinoflagellater + Flagellater
     ) %>%
   group_by(Year2, Quarter) %>%
