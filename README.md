@@ -16,5 +16,5 @@ Data merging and analyses for the Klimaoverblikk-opsjon
 [Script 07](07_Plots_annual.md) - Mass production of time series plots of annual data with Theil-Sen regression lines. Stored in [Figures_07](Figures_07)  
 [Script 08](08_Regression.md) - Runs multiple regression models (w/ backwards selection) for some hydrography and plankton variables  
   
-![Theil-Sen trends](https:///06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-15-1.png)
+![Theil-Sen trends](06_Timeseries_regression_Theil-Sen_files/figure-html/unnamed-chunk-15-1.png)
   
