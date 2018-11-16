@@ -11,7 +11,7 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
-library(openair)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
+library(openair)  
 
 # library(pander)
 ```
@@ -36,6 +36,8 @@ TheilSen(df, pollutant = "Value", main = varname, ylab = "Median during year",
 
 ```
 
+
+## Lager masse figurer 
 ```{r}
 # write.table(tibble(unique(dat_a$Variable)), "clipboard", row.names = FALSE, quote = FALSE)
 # plotdata <- read_xls("07_Plotdata.xlsx", sheet = 1)
