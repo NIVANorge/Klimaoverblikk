@@ -38,26 +38,30 @@ library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's sl
 ## 1. Data (annual and partly seasonal)  
 ### a. Read data
 ```{r}
-df_rivers_summ <- read.csv("Data_produced/05_df_rivers_summ.csv")
-df_rivers_springflood <- read.csv("Data_produced/05_df_rivers_springflood.csv")
-df_hydro_summ <- read.csv("Data_produced/05_df_hydro_summ.csv")
-df_plank_summ <- read.csv("Data_produced/05_df_plank_summ.csv")
+df_rivers_summ_a <- read.csv("Data_produced/05_df_rivers_summ_a.csv")
+df_rivergroup_springflood <- read.csv("Data_produced/05_df_rivergroup_springflood.csv")
+df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
+df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
+
 ```
 
 ### b. Collect data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
+str(df_rivers_summ_a)
+
 df1a <- df_rivers_summ_a %>%
-  mutate(DisTot = DisTot/1E3) %>%
-  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  mutate(DisTot = Discharge/1E3) %>%
+  gather("Variable", "Value", TotN:Discharge) %>%
   mutate(River_type = paste0("River_", River_type),
          Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
   mutate(Variable = paste0(River_type, "_", Variable),
          Value = Value/1E3) %>%
   select(Variable, Year, Value)
-# head(df1a)
-# df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
+
+ head(df1a)
+#df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
 df1b <- df_rivergroup_springflood %>%
   rename(Floodmax = DisTot_max_rel, FloodmaxMonth = DisTot_max_month) %>%
@@ -66,6 +70,7 @@ df1b <- df_rivergroup_springflood %>%
   mutate(Variable = paste0(River_type, "_", Variable)) %>%
   select(Variable, Year, Value)
 # head(df1b)
+
 
 df2 <- df_hydro_summ_a %>%
   gather("Variable", "Value", Temperatur:Siktdyp) %>%
@@ -133,7 +138,8 @@ write.csv(dat_q, "Data_produced/06_dat_q.csv", row.names = FALSE, quote = FALSE)
 ## 3a. Define trend analysis functions
 One for annual data, one for swasonal
 ```{r}
-test1 <- df_rivers_summ %>%
+
+test1 <- df_rivers_summ_q %>%
   filter(River_type %in% "Local" & Quarter %in% 2) %>%
   with(., rkt(Year, TrspTot_TOC))
 print(test1)

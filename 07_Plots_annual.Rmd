@@ -23,6 +23,7 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
+install.packages("openair")
 library(openair)  
 
 # library(pander)
