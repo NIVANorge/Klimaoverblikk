@@ -9,6 +9,9 @@ output: html_document
 ```{r}
 library(ggplot2)
 
+#install.packages("ggrepel")
+library(ggrepel)
+
 # packages hvis teste eksempel med googlemaps
 #library(RgoogleMaps)
 #library(ggmap)
@@ -57,6 +60,18 @@ ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (Type))) +
   annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
   coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11.5), ylim = c(58, 60)) +
   geom_point() +
+  labs(x = "Longitude", y= "Latitude", color = "Station type")
+
+
+ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (Type))) + 
+  annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
+  coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11.5), ylim = c(58, 60)) +
+  geom_point() +
+  geom_text_repel(data = df2,
+            aes(Lon, Lat,label = ID,group = ID),
+            color = 'black',
+            size  = 3,
+            box.padding = 0.7, point.padding = 0.5) +
   labs(x = "Longitude", y= "Latitude", color = "Station type")
 
 # test for å merke med ID, ikke helt funnet god løsning
