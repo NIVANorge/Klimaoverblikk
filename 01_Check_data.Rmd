@@ -209,7 +209,6 @@ gg2 <- df %>%
   ggplot(aes(Species, N)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 gg2
 
-gg2
 
 ```
 
@@ -220,24 +219,31 @@ str(df_blot_ind)
 # individual variables
 #ggplot(df_blot_ind, aes(Year, H, NQI1)) + geom_line() + facet_wrap(~STAS) 
 
-# several variables
 
-# species and indices. NB. need to change order...
-gg1 <- df_blot_ind %>%
-  gather("Variable", Value,  H:No.ind) %>%
-  ggplot(aes(Year, Value)) + 
-    geom_line() +
-    facet_grid(Variable~STAS, scales = "free_y")
-gg1
+# several variables - stations separate
+df_blot_ind %>%
+  gather("Variable", "Value", H:TOC) %>%
+  filter(STAS %in% "B05") %>%
+  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "%<63um")))  %>%
+  ggplot(aes(Year, Value)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Variable, scales = "free_y", nrow = 3)
+    #labs(x = "Year", y= "Transports")
+ 
+ggsave ("Figures_rapp/Soft_B05_all.png", width = 8, height = 6, dpi=500)
 
-#sediment parameters 
-# spike in TOC for B35 in 2014 real??
-gg2 <- df_blot_ind %>%
-  gather("Variable", Value, "%<63um":TOC) %>%
-  ggplot(aes(Year, Value)) + 
-    geom_line() +
-    facet_grid(Variable~STAS, scales = "free_y")
-gg2
+df_blot_ind %>%
+  gather("Variable", "Value", H:TOC) %>%
+  filter(STAS %in% "B35") %>%
+  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "%<63um")))  %>%
+  ggplot(aes(Year, Value)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Variable, scales = "free_y", nrow = 3)
+    #labs(x = "Year", y= "Transports")
+ 
+ggsave ("Figures_rapp/Soft_B35_all.png", width = 8, height = 6, dpi=500)
 
 
 ```
@@ -302,14 +308,18 @@ df %>%
 #### Fjerna to stasjoner, snudd y-akse og plotta sammen. Bedre til visuell presentasjon.
 ```{r LGD index species}
 
+# Guri: lagt inn dette som eksempel, tatt med Loess smoother som i de andre plottene, og endre aksetittel til engelsk. Kan vi broppe LGD for an hvert artsnavn? etterhvert også bytte stasjonsnavn til de "nye" (407=HT113 og 410=HR104)
 df[df$Site %in% c(407, 410), ] %>%
   gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
   mutate(Species = sub("LDG.", "", Species)) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
     geom_point() +
+    geom_smooth() +
     facet_wrap(~ Species, nrow=3) +
     scale_y_reverse() +
-    labs(x = "", y= "Nedre voksedyp (m)", color = "Stasjon")
+    labs(x = "", y= "Lower growth depth (m)", color = "Station")
+
+ggsave ("Figures_rapp/Hard_LGD_9species.png", width = 8, height = 6, dpi=500)
 
 
 df[df$Site %in% c(407, 410), ] %>%
@@ -325,12 +335,18 @@ df[df$Site %in% c(407, 410), ] %>%
 * Probably makes more sense to plot porportions over time though!
 ```{r Hard-bottom species groups}
 
+str(df)
+
+# Guri: Tar også med dette plottet som eksempel
 df[df$Site %in% c(407, 410), ] %>%
   gather("Group", "Value", 36:40) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
     geom_point() +
+    geom_smooth()+
     facet_wrap(~ Group) +
-    labs(x = "", y= "Antall arter", color = "Stasjon")
+    labs(x = "", y= "Number of species", color = "Station")
+
+ggsave ("Figures_rapp/Hard_SpeciesGroups.png", width = 8, height = 6, dpi=500)
 ```
 
 

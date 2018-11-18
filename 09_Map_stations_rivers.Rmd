@@ -55,29 +55,28 @@ print (df2)
 load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/Norway_coastline_longlat2.RData")
 
 # test med Kystverkets kart
-#
+
+# 
 ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (Type))) + 
   annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
   coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11.5), ylim = c(58, 60)) +
   geom_point() +
   labs(x = "Longitude", y= "Latitude", color = "Station type")
 
-
+# example with ggrepel
 ggplot(data=df2, aes(x = Lon, y = Lat, color = as.character (Type))) + 
   annotation_map(norway_coast_longlat2, aes(long, lat), fill = "darkolivegreen3")  +
   coord_map("lambert", parameters = c(58.7, 9.3), xlim = c(8, 11.5), ylim = c(58, 60)) +
   geom_point() +
-  geom_text_repel(data = df2,
+  geom_label_repel(data = df2,
             aes(Lon, Lat,label = ID,group = ID),
             color = 'black',
             size  = 3,
-            box.padding = 0.7, point.padding = 0.5) +
+            box.padding = 0.5, point.padding = 0.5) +
   labs(x = "Longitude", y= "Latitude", color = "Station type")
 
-# test for å merke med ID, ikke helt funnet god løsning
-#, shape = ID
- #geom_text (size = 3)
-  #geom_label(label=Name, nudge_x = 0.25, nudge_y = 0.2)
+ggsave ("Figures_rapp/Map_prelim.png", width = 8, height = 6, dpi=500)
+
 
 # openstreetmap, større område
 load("K:/Avdeling/214-Oseanografi/DHJ/Data/Maps/coastline_skagerrak_coords_longlat.RData")

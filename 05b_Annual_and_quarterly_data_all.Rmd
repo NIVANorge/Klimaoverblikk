@@ -14,7 +14,8 @@ Overview:
 * Produces summarized data by year (ending in '_a') and quarter (ending in '_q') 
 * Reads data from delivered data files (rivers, hydrology) and ordination (plankton, hard-bottom, soft-bottom)   
 * Data produced are written to Data_produced (starting with '05_') for later use   
-* No need to add ordination "data" (ie., scores), they are already at annual level 
+* No need to add ordination "data" (ie., scores), they are already at annual level
+* HFR: annual plots of soft-bottom variables in script 01_ (section 4 c)
 
 ## 0. Libraries
 ```{r}
@@ -271,7 +272,7 @@ ggplot(df_rivers_summ_a, aes(Year, TOC/1E3, color = River_type)) +
 
 str(df_rivers_summ_a)
 
-# HFR: NB! no scaling used in the two figures saved 17.11
+# HFR: NB! no scaling used here for now - need to discuss w/Øyvind
 
 # Distant - several vars
 df_rivers_summ_a %>%
