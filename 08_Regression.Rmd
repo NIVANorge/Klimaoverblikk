@@ -20,7 +20,7 @@ Check out package dynlm for including lagged variables - see https://stackoverfl
 library(tidyverse)
 library(readxl)
 library(MASS)
-# install.packages("visreg")
+#install.packages("visreg")
 library(visreg)
 
 
@@ -59,7 +59,7 @@ dat <- left_join(dat, df_nao)
 
 ### a. Surface salinity
 ```{r}
-full_model <- lm(Salt_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO, data = dat)
+full_model <- lm(Salt_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -67,8 +67,8 @@ summary(step_model)
 
 ### b. Surface Total N
 ```{r}
-full_model <- lm(TotN_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
-                 River_Local_TOTN + River_Distant_TOTN, data = dat)
+full_model <- lm(TotN_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
+                 River_Local_TotN + River_Distant_TotN, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -77,8 +77,8 @@ summary(step_model)
 
 ### c. Surface Total P
 ```{r}
-full_model <- lm(TotP_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
-                 River_Local_TOTP + River_Distant_TOTP, data = dat)
+full_model <- lm(TotP_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
+                 River_Local_TotP + River_Distant_TotP, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -86,7 +86,7 @@ summary(step_model)
 
 ### d. Surface TSM
 ```{r}
-full_model <- lm(TSM_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+full_model <- lm(TSM_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
@@ -98,8 +98,8 @@ visreg(step_model, points = list(cex = 1))
 
 ### e. Siktedyp
 ```{r}
-full_model <- lm(Siktdyp_Surface ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
-                 River_Local_TOTN + River_Distant_TOTN + River_Local_TOTP + River_Distant_TOTP + 
+full_model <- lm(Siktdyp_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
+                 River_Local_TotN + River_Distant_TotN + River_Local_TotP + River_Distant_TotP + 
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
@@ -112,7 +112,7 @@ visreg(step_model, points = list(cex = 1))
 
 ### a. Intermediate salinity
 ```{r}
-full_model <- lm(Salt_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO, data = dat)
+full_model <- lm(Salt_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -120,8 +120,8 @@ summary(step_model)
 
 ### b. Intermediate Total N
 ```{r}
-full_model <- lm(TotN_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
-                 River_Local_TOTN + River_Distant_TOTN, data = dat)
+full_model <- lm(TotN_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
+                 River_Local_TotN + River_Distant_TotN, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -130,8 +130,8 @@ summary(step_model)
 
 ### c. Intermediate Total P
 ```{r}
-full_model <- lm(TotP_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
-                 River_Local_TOTP + River_Distant_TOTP, data = dat)
+full_model <- lm(TotP_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
+                 River_Local_TotP + River_Distant_TotP, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
@@ -139,7 +139,7 @@ summary(step_model)
 
 ### d. Intermediate TSM
 ```{r}
-full_model <- lm(TSM_Intermediate ~ River_Local_DisTot + River_Distant_DisTot + Winter_NAO +
+full_model <- lm(TSM_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)

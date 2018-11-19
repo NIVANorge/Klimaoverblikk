@@ -485,23 +485,19 @@ df <- Df.Arendal %>%
       Depth %in% c(50,75) ~ "Deep")
     )
 
-#str (df)
-# HFR: husk å rename kolonner her
-#df <- rename(df, TotN = TrspTot_TOTN,
-#                    NO3 = "TrspTot_NO3-N",
-#                    NH4 = "TrspTot_NH4-N",
-#                    TotP = TrspTot_TOTP,
-#                    TOC = TrspTot_TOC,
-#                    Alkalinity = TrspTot_ALK,
-#                    Calcium = TrspTot_Ca,
-#                    Discharge = DisTot,
-#                    PO4 = "TrspTot_PO4-P",
-#                    SPM = TrspTot_SPM,
-#                    Si = TrspTot_SiO2)
+str (df)
+
+# rename kolonner
+df <- rename(df, Temperature = Temperatur,
+                    Salinity = Salt,
+                    Density = Tetthet,
+                    Si = SiO4,
+                    Chla = Klorofyll,
+                    Secchi = Siktdyp)
 
 df_hydro_summ_a <- df %>%
   group_by(Year, Depth) %>%
-  summarize_at(vars(Temperatur:Siktdyp), mean, na.rm = TRUE)
+  summarize_at(vars(Temperature:Secchi), mean, na.rm = TRUE)
 
 df_hydro_summ_q <- df %>%
   mutate(
@@ -516,7 +512,7 @@ df_hydro_summ_q <- df %>%
       Month > 1 ~ Year)
     ) %>%
   group_by(Year2, Quarter, Depth) %>%
-  summarize_at(vars(Temperatur:Siktdyp), mean, na.rm = TRUE) %>%
+  summarize_at(vars(Temperature:Secchi), mean, na.rm = TRUE) %>%
   rename(Year = Year2)
 
 df_hydro_summ_a$Depth <- factor(df_hydro_summ_a$Depth, 
@@ -539,6 +535,8 @@ write.csv(df_hydro_summ_q, "Data_produced/05_df_hydro_summ_q.csv", row.names = F
 ### d1. Plot annual data
 ```{r}
 
+str(df_hydro_summ_a)
+
 # annual time series - single variable
 ggplot(df_hydro_summ_a, aes(Year, Temperatur, color = Depth)) +
   geom_smooth() + 
@@ -546,8 +544,8 @@ ggplot(df_hydro_summ_a, aes(Year, Temperatur, color = Depth)) +
 
 # annual time series - several variables
 df_hydro_summ_a %>%
-  gather("Var", "Concentration", Temperatur, Salt, O2) %>%
-  mutate(Var=factor(Var, levels = c("Temperatur", "Salt", "O2")))  %>%
+  gather("Var", "Concentration", Temperature, Salinity, O2) %>%
+  mutate(Var=factor(Var, levels = c("Temperature", "Salinity", "O2")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() +
     geom_point() +
@@ -556,8 +554,8 @@ df_hydro_summ_a %>%
 ggsave ("Figures_rapp/Hydro_a_T_S_O.png", width = 8, height = 6, dpi=500)
 
 df_hydro_summ_a %>%
-  gather("Var", "Concentration", DIN, PO4, SiO4) %>%
-  #mutate(Var=factor(Var, levels = c("DIN", "PO4", "SiO4")))  %>%
+  gather("Var", "Concentration", DIN, PO4, Si) %>%
+  #mutate(Var=factor(Var, levels = c("DIN", "PO4", "Si")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() +
     geom_point() +
@@ -567,8 +565,8 @@ ggsave ("Figures_rapp/Hydro_a_InorgNut.png", width = 8, height = 6, dpi=500)
 
 #HFR: rev siktedyp
 df_hydro_summ_a %>%
-  gather("Var", "Concentration", Klorofyll, TotP, TotN, Siktdyp) %>%
-  mutate(Var=factor(Var, levels = c("Klorofyll", "TotN", "TotP", "Siktdyp")))  %>%
+  gather("Var", "Concentration", Chla, TotP, TotN, Secchi) %>%
+  mutate(Var=factor(Var, levels = c("Chla", "TotN", "TotP", "Secchi")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() +
     geom_point() +
@@ -585,6 +583,17 @@ df_hydro_summ_a %>%
     facet_wrap(~Var, scales = "free_y")
 
 ggsave ("Figures_rapp/Hydro_a_POM.png", width = 8, height = 6, dpi=500)
+
+# "samleplot" med alle var
+
+df_hydro_summ_a %>%
+  gather("Var", "Concentration", Temperature, Salinity, O2, PO4, Si, Chla:Secchi) %>%
+  mutate(Var=factor(Var, levels = c("Temperature", "Salinity", "O2", "DIN", "PO4", "Si", "Chla", "TotN", "TotP", "POC", "PON", "POP", "TSM", "Secchi")))  %>%
+  ggplot(aes(Year, Concentration, color = Depth)) +
+    geom_smooth() +
+    geom_point() +
+    facet_wrap(~Var, scales = "free_y", ncol = 3)
+
 ```
 
 ### d2. Plot quarterly data
@@ -602,8 +611,8 @@ ggplot(df_hydro_summ_q, aes(Year, Temperatur, color = Depth)) +
 
 # several vars
 df_hydro_summ_q %>%
-  gather("Var", "Concentration", Temperatur, Salt, O2) %>%
-   mutate(Var=factor(Var, levels = c("Temperatur", "Salt", "O2")))  %>%
+  gather("Var", "Concentration", Temperature, Salinity, O2) %>%
+   mutate(Var=factor(Var, levels = c("Temperature", "Salinity", "O2")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() + 
     geom_point() +
@@ -611,11 +620,8 @@ df_hydro_summ_q %>%
 
 ggsave ("Figures_rapp/Hydro_q_T_S_O.png", width = 8, height = 6, dpi=500)
 
-#summere inorg N
-df_hydro_summ_q$DIN <- df_hydro_summ_q$NO2_NO3 + df_hydro_summ_q$NH4
-
 df_hydro_summ_q %>%
-  gather("Var", "Concentration", DIN, PO4, SiO4) %>%
+  gather("Var", "Concentration", DIN, PO4, Si) %>%
    #mutate(Var=factor(Var, levels = c("DIN", "PO4", "Si")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() + 
@@ -625,8 +631,8 @@ df_hydro_summ_q %>%
 ggsave ("Figures_rapp/Hydro_q_InorgNut.png", width = 8, height = 6, dpi=500)
 
 df_hydro_summ_q %>%
-  gather("Var", "Concentration", Klorofyll, TotP, TotN, Siktdyp) %>%
-   mutate(Var=factor(Var, levels = c("Klorofyll", "TotN", "TotP", "Siktdyp")))  %>%
+  gather("Var", "Concentration", Chla, TotP, TotN, Secchi) %>%
+   mutate(Var=factor(Var, levels = c("Chla", "TotN", "TotP", "Secchi")))  %>%
   ggplot(aes(Year, Concentration, color = Depth)) +
     geom_smooth() + 
     geom_point() +
