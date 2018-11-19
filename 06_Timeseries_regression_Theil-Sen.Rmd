@@ -29,8 +29,11 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
-install.packages("rkt")
+#install.packages("rkt")
 library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
+
+#citation ("rkt")
+#citation ("ggplot2")
 
 # library(pander)
 ```
@@ -60,7 +63,7 @@ df1a <- df_rivers_summ_a %>%
          Value = Value/1E3) %>%
   select(Variable, Year, Value)
 
- head(df1a)
+# head(df1a)
 #df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
 df1b <- df_rivergroup_springflood %>%
@@ -85,6 +88,7 @@ df3 <- df_plank_summ_a %>%
   select(Variable, Year,Value)
 # head(df3)
 
+
 dat_a <- rbind(df1a, df1b, df2, df3) %>% as.data.frame()
 head(dat_a)
 ```
@@ -94,6 +98,8 @@ head(dat_a)
 df_rivers_summ_q <- read.csv("Data_produced/05_df_rivers_summ_q.csv")
 df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
 df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
+
+str (df_rivers_summ_q)
 ```
 
 ### d. Collect quarterly data  
@@ -101,17 +107,18 @@ df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
 df1 <- df_rivers_summ_q %>%
-  mutate(DisTot = DisTot/1E3) %>%
-  gather("Variable", "Value", TrspTot_TOTN:DisTot) %>%
+  mutate(Discharge = Discharge/1E3) %>%
+  gather("Variable", "Value", TotN:Discharge) %>%
   mutate(River_type = paste0("River_", River_type),
          Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
   mutate(Variable = paste0(River_type, "_", Variable),
          Value = Value/1E3) %>%
   select(Variable, Year, Quarter, Value)
+
 head(df1)
 df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
-df2 <- df_hydro_summ %>%
+df2 <- df_hydro_summ_q %>%
   gather("Variable", "Value", Temperatur:Siktdyp) %>%
   mutate(Variable = paste0(Variable, "_", Depth)) %>%
   filter(!(Variable %in% c("Siktdyp_Intermediate", "Siktdyp_Deep"))) %>%
@@ -120,12 +127,12 @@ df2 <- df_hydro_summ %>%
 
 head(df2)
 
-df3 <- df_plank_summ %>%
+df3 <- df_plank_summ_q %>%
   gather("Variable", "Value", Kiselalger_med:Total_med) %>%
   select(Variable, Year, Quarter, Value)
 head(df3)
 
-dat <- rbind(df1, df2, df3) %>% as.data.frame()
+dat_q <- rbind(df1, df2, df3) %>% as.data.frame()
 ```
 
 e. Save collected data
@@ -136,19 +143,20 @@ write.csv(dat_q, "Data_produced/06_dat_q.csv", row.names = FALSE, quote = FALSE)
 ```
 
 ## 3a. Define trend analysis functions
-One for annual data, one for swasonal
+One for annual data, one for seasonal
 ```{r}
 
 test1 <- df_rivers_summ_q %>%
   filter(River_type %in% "Local" & Quarter %in% 2) %>%
-  with(., rkt(Year, TrspTot_TOC))
+  with(., rkt(Year, TOC))
 print(test1)
 
 ```
 
 ### b. Test 2
 ```{r}
-trend_analysis <- function(variable, quarter, data = dat){
+
+trend_analysis <- function(variable, quarter, data = dat_q){
   df <- data %>%
     filter(Variable %in% variable & Quarter %in% quarter & !is.na(Value))
   result <- rkt(df$Year, df$Value)
@@ -158,12 +166,14 @@ trend_analysis <- function(variable, quarter, data = dat){
 }
 
 trend_analysis("River_Local_TOC", 2)
+
+
 ```
 
 ## 3. Perform analysis  
 ```{r}
 # ?map
-df <- dat %>%
+df <- dat_q %>%
   filter(!is.na(Value)) %>%
   group_by(Variable, Quarter) %>%
   summarise(N = n()) %>%
