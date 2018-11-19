@@ -387,6 +387,9 @@ ggplot(df_rivers_springflood, aes(Year, DisTot_max_rel)) +
   geom_smooth() + 
   geom_point() +
   facet_wrap(~Station_name)
+
+ggsave ("Figures_rapp/Rivers_Maxflood.png", width = 8, height = 6, dpi=500)
+
 ```
 
 ### g2. Plot of flood timing
@@ -395,6 +398,8 @@ df_rivers_springflood %>%
   ggplot(aes(Year, DisTot_max_month)) +
   geom_smooth() + geom_point() +
   facet_wrap(~Station_name)
+
+ggsave ("Figures_rapp/Rivers_timing_flood.png", width = 8, height = 6, dpi=500)
 
 df_rivers_springflood %>%
   gather("Parameter", "Month", DisTot_max_month, DisTot_40perc, DisTot_60perc, DisTot_80perc) %>%

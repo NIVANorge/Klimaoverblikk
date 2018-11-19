@@ -136,6 +136,9 @@ ggplot(df, aes(yday(Date), Klorofyll, group = Year, color = factor(Year), size =
     geom_vline(xintercept = c(yday_1feb, yday_30apr)) +
     scale_y_log10() +
     facet_grid(Decade~.)
+
+ggsave ("Figures_rapp/Plankton_bloomperiods.png", width = 8, height = 6, dpi=500)
+
 ```
 
 ### c. Bloomperiod_02: Max Chl a
@@ -144,6 +147,7 @@ Bloomperiod_02 <- Df.Arendal %>%
   filter(Depth %in% 5 & Month %in% 2:4 & Klorofyll >= threshold & !is.na(Klorofyll)) %>% 
   group_by(Year) %>%
   summarize(Date = Date[Klorofyll %in% max(Klorofyll)][1])
+
 ```
 
 ## 4. Pick data in plankton data set
