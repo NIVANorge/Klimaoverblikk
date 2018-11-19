@@ -29,7 +29,7 @@ library(tidyverse)
 library(readxl)
 library(broom)
 library(lubridate)
-#install.packages("rkt")
+# install.packages("rkt")
 library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's slope estimator
 
 #citation ("rkt")
@@ -171,6 +171,7 @@ trend_analysis("River_Local_TOC", 2)
 ```
 
 ## 3. Perform analysis  
+### a. Quarterly
 ```{r}
 # ?map
 df <- dat_q %>%
@@ -182,25 +183,26 @@ df <- dat_q %>%
 df_result_list <-
   1:nrow(df) %>% map(~trend_analysis(df$Variable[.], df$Quarter[.]))
 
-df_result <- bind_rows(df_result_list)
+df_result_q <- bind_rows(df_result_list)
 
-print (df_result)
+print (df_result_q)
 
 
 ```
+
 
 ## 4. Show results
 ### a. Most extreme changes
 ```{r}
 
 # head = mest negative = st�rst reduksjon over tid.
-df_result %>% arrange(Change_perc) %>% tail()
-df_result %>% arrange(Change_perc) %>% head()
+df_result_q %>% arrange(Change_perc) %>% tail()
+df_result_q %>% arrange(Change_perc) %>% head()
 ```
 
 ## 5. Save results
 ```{r}
-write.csv(df_result, "Data_produced/06_df_result.RData",
+write.csv(df_result_q, "Data_produced/06_df_result_q.csv",
           row.names = FALSE, quote = FALSE)
 ```
 
@@ -241,7 +243,7 @@ df_mean <- df_result_q  %>%
   summarise(Mean_change = mean(Change_perc)) %>%
   arrange(Mean_change)
 
-df <- df_result
+df <- df_result_q
 df$Variable <- factor(df$Variable, levels = df_mean$Variable)
 df$Quarter <- factor(df$Quarter)
 df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
