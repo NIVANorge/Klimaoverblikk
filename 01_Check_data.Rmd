@@ -256,7 +256,7 @@ ggsave ("Figures_rapp/Soft_B35_all.png", width = 8, height = 6, dpi=500)
 * Vi kutter 416 og 417, siden tidsserien her var relativt kort. *(Data er fortsatt med i parametere utenom ordinasjonsaksene)*
 * Vi kutter strandsone og konsentrerer oss bare om transektdata også i ordinasjonene. Endret fra tidligere versjon av HBanalysesett.csv
 * I ordinasjonene er det både alger og dyr
-* Jeg skal forsøke å finne en god måte å plotte artsscorer sammen med punktene i DCA-plot slik at vi kan tolke ordinasjonsresultater også med tanke på hvilke arter som utgjør endringene i sammfunnsstruktur over tid (*to come*).
+* Jeg skal forsøke å finne en god måte å plotte artsscorer sammen med punktene i DCA-plot slik at vi kan tolke ordinasjonsresultater også med tanke på hvilke arter som utgjør endringene i sammfunnsstruktur over tid (*finnes nå i ordinasjons-notebooken (02_)*).
 * La til figuren fra hardbunnsskriptet over endringer i nedre voksedyp for de ni indeksartene (makroalger) over tid.
 * Har lagt til antall arter i gruppene dyr, rød-, grønn- og brunalger over tid
 ** NB: Vi må snakke med Janne om hvor mye utbytting av personell over tid kan ha å si for resultatene!**
@@ -311,12 +311,13 @@ df %>%
 # Guri: lagt inn dette som eksempel, tatt med Loess smoother som i de andre plottene, og endre aksetittel til engelsk. Kan vi broppe LGD for an hvert artsnavn? etterhvert også bytte stasjonsnavn til de "nye" (407=HT113 og 410=HR104)
 df[df$Site %in% c(407, 410), ] %>%
   gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
-  mutate(Species = sub("LDG.", "", Species)) %>%
+  mutate(Species = sub("LGD.", "", Species)) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
     geom_point() +
     geom_smooth() +
     facet_wrap(~ Species, nrow=3) +
     scale_y_reverse() +
+    ylim(30,0) +
     labs(x = "", y= "Lower growth depth (m)", color = "Station")
 
 ggsave ("Figures_rapp/Hard_LGD_9species.png", width = 8, height = 6, dpi=500)
@@ -324,7 +325,7 @@ ggsave ("Figures_rapp/Hard_LGD_9species.png", width = 8, height = 6, dpi=500)
 
 df[df$Site %in% c(407, 410), ] %>%
   gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
-  mutate(Species = sub("LDG.", "", Species)) %>%
+  mutate(Species = sub("LGD.", "", Species)) %>%
   ggplot(aes(Year, Value)) +
     geom_line() +
     facet_grid(Site~Species)
@@ -335,20 +336,36 @@ df[df$Site %in% c(407, 410), ] %>%
 * Probably makes more sense to plot porportions over time though!
 ```{r Hard-bottom species groups}
 
-str(df)
+# str(df)
 
 # Guri: Tar også med dette plottet som eksempel
+
 df[df$Site %in% c(407, 410), ] %>%
   gather("Group", "Value", 36:40) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
     geom_point() +
     geom_smooth()+
-    facet_wrap(~ Group) +
+    facet_wrap(~ Group, scales = "free_y") +
     labs(x = "", y= "Number of species", color = "Station")
 
 ggsave ("Figures_rapp/Hard_SpeciesGroups.png", width = 8, height = 6, dpi=500)
+
 ```
 
+### g. Plot diversity indices
+
+```{r Hard-bottom diversity}
+
+df[df$Site %in% c(407, 410), ] %>%
+  gather("Group", "Value", `H`:`J`) %>%
+  ggplot(aes(Year, Value, color = as.character(Site))) +
+    geom_point() +
+    geom_smooth()+
+    facet_wrap(~ Group, scales = "free_y") +
+    labs(x = "", y= "", color = "Station")
+
+ggsave ("Figures_rapp/Hard_SpeciesDiv.png", width = 8, height = 6, dpi=500)
+```
 
 ## 6. Phytoplankton
 

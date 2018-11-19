@@ -233,7 +233,7 @@ NMDSplot_1
 
 ```
 ### j. Species in relation to ordination
-```{r DCA-species, fig.height = 12, fig.width = 6}
+```{r DCA-species, fig.height = 8, fig.width = 6}
 # Arter ift DCA 
 ord.alger <- read.csv("Datasett/Hardbunn_KOPI/HB_AlgerORD.csv", sep=";", stringsAsFactors = FALSE, dec=",")
 ord.dyr <- read.csv("Datasett/Hardbunn_KOPI/HB_DyrORD.csv", sep=";", stringsAsFactors = FALSE, dec=",")
@@ -253,7 +253,8 @@ ord.year.dyr <- ord.dyr[ord.dyr$DCA1 >= -0.8 & ord.dyr$DCA1 <= -0.3 |ord.dyr$DCA
 # alger 90 tallet vs nå
 ggplot(ord.year.alger, aes(x = IDnavn, y = DCA1, color = CAT2)) + 
   geom_point(size=3) +   # Draw points
-  scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), guide = guide_legend(title = "")) + # choose colors
+  scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), 
+                      guide = guide_legend(title = "")) + # choose colors
   geom_segment(aes(   x = IDnavn, 
                    xend = IDnavn, 
                       y = min(DCA1), 
@@ -284,37 +285,56 @@ ggplot(ord.year.dyr, aes(x=IDnavn, y=DCA1, color = CAT2)) +
   theme_classic()
 
 # alger ekstremer
-ggplot(ord.sub.alger, aes(x = IDnavn, y = DCA1, color = CAT2)) + 
-  geom_point(size=3) +   # Draw points
-  scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), guide = guide_legend(title = "")) + # choose colors
-  geom_segment(aes(   x = IDnavn, 
-                      xend = IDnavn, 
-                      y = min(DCA1), 
-                      yend = max(DCA1)),  
-               linetype="dashed", 
-               size=0.1) +   # Draw dashed lines
-  labs(title="Makroalger vs DCA1", 
-       caption="source: Alger (høyeste og laveste 10 % av DCA-verdier)",
-       x="") +  
-  coord_flip() +
-  theme_classic()
+HardFloraDCA <-
+  ord.sub.alger %>%
+  arrange(DCA1) %>%
+  mutate(IDnavn = factor(IDnavn, unique(IDnavn))) %>%
+  ggplot(aes(x = IDnavn, y = DCA1, color = CAT2)) + 
+    geom_point(size=3) +   # Draw points
+    scale_colour_manual(values = c("tan3", "darkolivegreen2", "tomato2"), 
+                        guide = guide_legend(title = ""),
+                        labels=c("Brown", "Green", "Red")) + # choose colors etc
+    geom_segment(aes(   x = IDnavn, 
+                        xend = IDnavn, 
+                        y = min(DCA1), 
+                        yend = max(DCA1)),  
+                 linetype="dashed", 
+                 size=0.1) +   # Draw dashed lines
+    labs(title="Macroalgae vs DCA1", 
+         caption="source: Macroalgae subset (smallest and largest 10 % of DCA-scores)",
+         x="") +  
+    coord_flip() +
+    theme_classic()
+
+HardFloraDCA  
+ggsave ("Figures_rapp/HardFloraDCA.png", HardFloraDCA, width = 6, height = 10, dpi=500)
 
 # dyr ekstremer
-ggplot(ord.sub.dyr, aes(x=IDnavn, y=DCA1, color = CAT2)) + 
-  geom_point(size=3) +   # Draw points
-  scale_colour_brewer(palette = "Set2", guide = guide_legend(title = "")) + # choose colors
-  geom_segment(aes(x=IDnavn, 
-                   xend=IDnavn, 
-                   y=min(DCA1), 
-                   yend=max(DCA1)), 
-               linetype="dashed", 
-               size=0.1) +   # Draw dashed lines
-  
-  labs(title="Dyr vs DCA1", 
-       caption="source: Dyr (høyeste og laveste 10 % av DCA-verdier)",
-       x="") +  
-  coord_flip() +
-  theme_classic()
+
+HardFaunaDCA <-
+  ord.sub.dyr %>%
+  arrange(DCA1) %>%
+  mutate(IDnavn = factor(IDnavn, unique(IDnavn))) %>%
+  ggplot(aes(x = IDnavn, y = DCA1, color = CAT2)) + 
+    geom_point(size=3) +   # Draw points
+    scale_colour_brewer(palette = "Set2", 
+                        guide = guide_legend(title = ""),
+                        labels=c("Filterfeeders", "Carnivorous")) + # choose colors etc
+    geom_segment(aes(x=IDnavn, 
+                     xend=IDnavn, 
+                     y=min(DCA1), 
+                     yend=max(DCA1)), 
+                 linetype="dashed", 
+                 size=0.1) +   # Draw dashed lines
+    
+    labs(title="Animals vs DCA1", 
+         caption="source: Animal subset (smallest and largest 10 % of DCA-scores)",
+         x="") +  
+    coord_flip() +
+    theme_classic()
+
+HardFaunaDCA
+ggsave ("Figures_rapp/HardFaunaDCA.png", HardFaunaDCA, width = 6, height = 10, dpi=500)
 ```
 Arters "optimum" (vid tolkning) langs DCA-aksen. Sier noe om hvor man mest sannsynlig finner de ulike artene. Har plottet arter som ligger i området der punktene fra tidlig 90-tall og nåtid befinner seg. Har også plottet ekstremene. (Legg derfor merke til skala på DCA1)
 
@@ -518,14 +538,18 @@ NMDSplot_2
 ```
 
 ### i. Species in relation to ordination
-```{r, fig.height = 16, fig.width = 6}
+```{r, fig.height = 10, fig.width = 6}
 # boundaries
-bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.1, 0.9))
-bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
+bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.05, 0.95))
+bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.05, 0.95))
 
 # subset on boundaries
 bound_05.sub <- ord1_05.species[ord1_05.species$DCA1 <= bound_05[[1]] |ord1_05.species$DCA1 >= bound_05[[2]], ]
 bound_35.sub <- ord1_35.species[ord1_35.species$DCA1 <= bound_35[[1]] |ord1_35.species$DCA1 >= bound_35[[2]], ]
+
+# subset on boundaries for site scores (subjective)
+ord.year_35 <- ord1_35.species[ord1_35.species$DCA1 >= -0.6 & ord1_35.species$DCA1 <= -0.25 |ord1_35.species$DCA1 >= 0.3 & ord1_35.species$DCA1 <= 1.5, ]
+ord.year_05 <- ord1_05.species[ord1_05.species$DCA1 >= -0.8 & ord1_05.species$DCA1 <= -0.25 |ord1_05.species$DCA1 >= 0.25 & ord1_05.species$DCA1 <= 0.7, ]
 
 write.csv2(bound_05.sub, file = "Data_produced/BBord1_05_sub.csv")
 write.csv2(bound_35.sub, file = "Data_produced/BBord1_35_sub.csv")
@@ -536,7 +560,10 @@ write.csv2(ord1_35.species, file = "Data_produced/BBord1_35_full.csv")
 
 # disse blir litt mer komplisert dersom vi deler opp i grupper
 BBartOrd_05 <- 
-  ggplot(bound_05.sub, aes(x = Art, y = DCA1)) + 
+  bound_05.sub %>%
+  arrange(DCA1) %>%
+  mutate(Art = factor(Art, unique(Art))) %>%
+  ggplot(aes(x = reorder(Art, desc(Art)), y = DCA1)) + 
   geom_point(size=3) +   # Draw points
   geom_segment(aes(   x = Art, 
                    xend = Art, 
@@ -544,14 +571,18 @@ BBartOrd_05 <-
                    yend = max(DCA1)), 
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
-  labs(title="Bløtbunnsorganismer vs DCA1", 
-       caption="source: Stasjon 05 (høyeste og laveste 5 % av DCA-verdier)",
+  labs(title="Soft bottom fauna vs DCA1", 
+       caption="source: Site 05 (smallest and largest 5 % av DCA-scores)",
        x="") +  
   coord_flip() +
+  scale_y_reverse() +
   theme_classic()
 
 BBartOrd_35 <- 
-  ggplot(bound_35.sub, aes(Art, DCA1)) + 
+  bound_35.sub %>%
+  arrange(DCA1) %>%
+  mutate(Art = factor(Art, unique(Art))) %>%
+  ggplot(aes(x = Art, y = DCA1)) +
   geom_point(size=3) +   # Draw points
   geom_segment(aes(   x = Art, 
                    xend = Art, 
@@ -559,14 +590,46 @@ BBartOrd_35 <-
                    yend = max(DCA1)), 
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
-  labs(title="Bløtbunnsorganismer vs DCA1", 
-       caption="source: Stasjon 35 (høyeste og laveste 5 % av DCA-verdier)",
+  labs(title="Soft bottom fauna vs DCA1", 
+       caption="source: Site 35 (smallest and largest 5 % av DCA-scores)",
        x="") +  
   coord_flip() +
   theme_classic()
 
 BBartOrd_35
 BBartOrd_05
+
+ggsave ("Figures_rapp/SoftFaunaDCA_05.png", BBartOrd_05, width = 6, height = 10, dpi=500)
+ggsave ("Figures_rapp/SoftFaunaDCA_35.png", BBartOrd_35, width = 6, height = 10, dpi=500)
+
+# skip these - very difficult to set boundaries subjectively
+  ggplot(ord.year_35, aes(x = Art, y = DCA1)) + 
+  geom_point(size=3) +   # Draw points
+  geom_segment(aes(   x = Art, 
+                   xend = Art, 
+                      y = min(DCA1), 
+                   yend = max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Soft bottom fauna vs DCA1", 
+       caption="source: Site 35",
+       x="") +  
+  coord_flip() +
+  theme_classic()
+  
+  ggplot(ord.year_05, aes(x = Art, y = DCA1)) + 
+  geom_point(size=3) +   # Draw points
+  geom_segment(aes(   x = Art, 
+                   xend = Art, 
+                      y = min(DCA1), 
+                   yend = max(DCA1)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Soft bottom fauna vs DCA1", 
+       caption="source: Site 05",
+       x="") +  
+  coord_flip() +
+  theme_classic()
 
 ```
 
@@ -787,7 +850,7 @@ PlanktonOrd_01 <-
                    yend = max(DCA1)), 
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
-  labs(title="Fytoplanktongrupper vs DCA1", 
+  labs(title="Phytoplankton vs DCA1", 
        caption="source: phytoplankton data extracted when Chl a (at 5m) over absolute threshold (1.1) during Feb to Apr",
        x="") +  
   coord_flip() +
@@ -805,7 +868,7 @@ PlanktonOrd_02 <-
                    yend = max(DCA1)), 
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
-  labs(title="Fytoplankton vs DCA1", 
+  labs(title="Phytoplankton vs DCA1", 
        caption="source: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr",
        x="") +  
   coord_flip() +
@@ -813,5 +876,8 @@ PlanktonOrd_02 <-
 
 PlanktonOrd_01
 PlanktonOrd_02
+
+ggsave ("Figures_rapp/PhytoTresholdDCA.png", plot = PlanktonOrd_01, width = 4, height = 4, dpi=500)
+ggsave ("Figures_rapp/PhytoFebAprDCA.png", plot = PlanktonOrd_02, width = 4, height = 4, dpi=500)
 
 ```
