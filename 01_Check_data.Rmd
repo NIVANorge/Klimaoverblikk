@@ -316,8 +316,8 @@ df[df$Site %in% c(407, 410), ] %>%
     geom_point() +
     geom_smooth() +
     facet_wrap(~ Species, nrow=3) +
-    scale_y_reverse() +
-    ylim(30,0) +
+    scale_y_reverse(limits=c(30,0)) +
+    scale_color_hue(labels = c("HT113", "HR104")) +
     labs(x = "", y= "Lower growth depth (m)", color = "Station")
 
 ggsave ("Figures_rapp/Hard_LGD_9species.png", width = 8, height = 6, dpi=500)
@@ -346,6 +346,7 @@ df[df$Site %in% c(407, 410), ] %>%
     geom_point() +
     geom_smooth()+
     facet_wrap(~ Group, scales = "free_y") +
+    scale_color_hue(labels = c("HT113", "HR104")) +
     labs(x = "", y= "Number of species", color = "Station")
 
 ggsave ("Figures_rapp/Hard_SpeciesGroups.png", width = 8, height = 6, dpi=500)
@@ -362,6 +363,7 @@ df[df$Site %in% c(407, 410), ] %>%
     geom_point() +
     geom_smooth()+
     facet_wrap(~ Group, scales = "free_y") +
+    scale_color_hue(labels = c("HT113", "HR104")) +
     labs(x = "", y= "", color = "Station")
 
 ggsave ("Figures_rapp/Hard_SpeciesDiv.png", width = 8, height = 6, dpi=500)

@@ -220,6 +220,17 @@ DCAplot_3 <- HBdata_long %>%
 
 DCAplot_3
 
+# DCA1 til rapport
+DCA1plot <- 
+  ggplot(HBdata_long, aes(Year, DCA1, color = as.character(Site))) +
+    geom_point() +
+    geom_smooth() +
+    scale_color_hue(labels = c("HT113", "HR104")) +
+    labs(color = "Station")
+
+DCA1plot
+ggsave("Figures_rapp/DCA1_hard.png", DCA1plot, width = 8, height = 6, dpi=500)
+
 # Innledende NMDS
 
 # NMDS aksene mot hverandre, fargekodet for år
@@ -513,6 +524,15 @@ DCAplot_3 <- ord1_both %>%
 
 DCAplot_3
 
+# DCA1 til rapport
+DCA1plot <- 
+  ggplot(ord1_both, aes(Year, DCA1)) +
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Site)
+DCA1plot
+ggsave("Figures_rapp/DCA1_soft.png", DCA1plot, width = 8, height = 6, dpi=500)
+
 # Innledende NMDS
 
 # NMDS aksene mot hverandre, fargekodet for år
@@ -769,6 +789,15 @@ DCAplot_3 <- ord_phyto01.df %>%
 
 DCAplot_3
 
+# DCA1 til rapport
+DCA1plot <- 
+  ggplot(ord_phyto01.df, aes(Year, DCA1)) +
+    geom_point() +
+    geom_smooth()
+
+DCA1plot
+ggsave("Figures_rapp/DCA1_bloom1.png", DCA1plot, width = 8, height = 6, dpi=500)
+
 
 # Innledende NMDS 
 NMDSplot.1 <- ggplot(nmds_phyto01.df, aes(NMDS1, NMDS2, color = as.numeric(as.character(Year)))) + 
@@ -809,6 +838,15 @@ DCAplot_3 <- ord_phyto02.df %>%
     facet_grid(~DCA_axis)
 
 DCAplot_3
+
+# DCA1 til rapport
+DCA1plot_2 <- 
+  ggplot(ord_phyto02.df, aes(Year, DCA1)) +
+    geom_point() +
+    geom_smooth()
+
+DCA1plot_2
+ggsave("Figures_rapp/DCA1_bloom2.png", DCA1plot_2, width = 8, height = 6, dpi=500)
 
 
 # Innledende NMDS 
@@ -869,7 +907,7 @@ PlanktonOrd_02 <-
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Phytoplankton vs DCA1", 
-       caption="source: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr",
+       caption="source: phytoplankton data extracted during max Chla (at 5m) during Feb to Apr",
        x="") +  
   coord_flip() +
   theme_classic()
