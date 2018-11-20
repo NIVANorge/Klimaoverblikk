@@ -22,7 +22,10 @@ library(readxl)
 library(MASS)
 #install.packages("visreg")
 library(visreg)
-
+library(vegan)
+library(lme4) # for mixed effect models
+library(standardize) # standardize data for modelling
+library(afex) # adding p-values to lmer output
 
 # library(pander)
 ```
@@ -52,8 +55,39 @@ df_nao <- read.table("https://climatedataguide.ucar.edu/sites/default/files/nao_
 colnames(df_nao) <- c("Year", "Winter_NAO")
 
 dat <- left_join(dat, df_nao)
+
 ```
 
+### e. PCA of environmental variables
+```{r environmental PCA, fig.height = 10, fig.width = 10}
+tail(dat)
+
+# cannot work with missing values, removing rows with missing
+dat.pca <- dat[complete.cases(dat), ]
+
+dim(dat)
+dim(dat.pca) # 9 rows removed (9 years)
+unique(dat.pca$Year) # mangler noe siden 2011
+
+# ser på miljøvarabelrommet
+var.pca <- rda(dat.pca[,-1], scale = TRUE)
+envvar  <- data.frame(scores(var.pca, display = "species"))
+head(envvar)
+
+# legger inn i plot
+plot(envvar$PC1, envvar$PC2)
+
+envvarplot <- envvar %>% 
+  ggplot(aes(PC1, PC2, label = row.names(envvar))) +
+  geom_segment(aes(x=0, xend=PC1, y=0, yend=PC2), 
+                 linetype="dashed", 
+                 arrow = arrow(length = unit(0.2, "cm"), type="closed"),
+                 size = 0.1, col = "dark gray") +
+                geom_text(col = "red")
+
+envvarplot
+
+```
 
 ## 2. Hydrographic data, surface
 
@@ -232,5 +266,73 @@ step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
+
+```
+
+
+# PART TWO - Biologigal data
+
+We're trying to find meaningful ways to describe the relationship between biological paramteres and environmental variables, and connect this to changes that have happened over time.
+
+** Tentative approach: **
+
+* Plot environmental vectors on ordination plots
+* Use this to generate hypotheses about causal links
+* Test by using models 
+  + Probably different models for every system
+  + Mixed effects for hard bottom (station as random)
+  + GLM for soft bottom (one model per station for DCA at least) and plankton
+* Probably makes sense to use the same set of explanatory variables in model selection for every response
+
+## Hard bottom
+### Environmental variables in relation to ordination
+```{r fitting environmental variables to ordination}
+dim(dat)
+
+# retrieving HB parameters
+HBdf <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
+names(HBdf)
+
+# coupling the two using dplyr, by Year
+HBdat <- left_join(HBdf, dat)
+names(HBdat)
+
+DCAhb <- HBdat[, 3:6]
+envHB <- HBdat[, 44:length(names(HBdat))]
+
+envfitHB <- envfit(DCAhb, envHB, na.rm = TRUE, permutations = 999, choices = 1:4)
+envfitHB # gives an indication of which parameters may be important for community responses along dca 1
+str(envfitHB)
+
+plot(DCAhb[1:2])
+plot(envfitHB, p.max = 0.01, add = TRUE) # plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
+
+HBpar <- names(which(envfitHB$vectors$pvals < 0.01)) # names of parameters with p-value < 0.01
+# Must remove phytoplankton
+```
+
+### DCA - possible causal links
+```{r fitting model for DCA}
+
+hist(HBdat$DCA1)
+hist((HBdat$DCA1)^(1/3))
+
+str(HBdat)
+
+# For use as random factor
+HBdat$Site <- as.character(HBdat$Site)
+
+# Standarizing
+# https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html 
+
+HBfullformula <- as.formula(paste("DCA1 ~ ", paste(HBpar, collapse = " + "), "+ (1|Site)", sep = ""))
+
+sHB <- standardize(HBfullformula, HBdat)
+HBlmer <- lmer(sHB$formula, sHB$data)
+
+# Model selection
+# https://cran.r-project.org/web/packages/lmerTest/lmerTest.pdf 
+
+HBlmer.select <- step(HBlmer) # check envvar for missing values
 
 ```
