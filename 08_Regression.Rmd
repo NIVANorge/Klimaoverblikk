@@ -26,6 +26,8 @@ library(vegan)
 library(lme4) # for mixed effect models
 library(standardize) # standardize data for modelling
 library(afex) # adding p-values to lmer output
+library(vegan)
+library(ggplot2)
 
 # library(pander)
 ```
@@ -75,20 +77,29 @@ dat %>%
 # ser på miljøvarabelrommet
 var.pca <- rda(dat.pca[,-1], scale = TRUE)
 envvar  <- data.frame(scores(var.pca, display = "species"))
-head(envvar)
+years   <- data.frame(scores(var.pca, display = "sites"))
 
-# legger inn i plot
-plot(envvar$PC1, envvar$PC2)
+pca_all <- bind_rows(envvar, years)
+pca_all$obj <- c(row.names(envvar), dat.pca$Year)
+pca_all$type <- c(rep("env", nrow(envvar)), rep("yr", nrow(years)))
 
-envvarplot <- envvar %>% 
-  ggplot(aes(PC1, PC2, label = row.names(envvar))) +
-  geom_segment(aes(x=0, xend=PC1, y=0, yend=PC2), 
+envvarplot <- pca_all %>% 
+  ggplot(aes(PC1, PC2)) +
+  geom_point(data = pca_all[pca_all$type=="yr", ], aes(color = as.numeric(as.character(obj)))) +
+  labs(color = "Year") +
+  geom_segment(data = pca_all[pca_all$type=="env", ], aes(x=0, xend=PC1*10, y=0, yend=PC2*10), 
                  linetype="dashed", 
                  arrow = arrow(length = unit(0.2, "cm"), type="closed"),
                  size = 0.1, col = "dark gray") +
-                geom_text(col = "red")
+  geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*10, y = PC2*10, label = obj),  color = "red", size = 3)
 
 envvarplot
+
+# Guri to Helene:
+# consider removing phytoplankton by f.inst. dplyr::select(-ends_with("_med"))
+# make two PCA-ordinations: 
+# one for predictors and one for hydrographic responses
+
 
 ```
 
@@ -339,5 +350,7 @@ HBlmer <- lmer(sHB$formula, sHB$data)
 
 HBlmer_select <- lmerTest::step(HBlmer) # check envvar for missing values
 HBlmer_select
+
+# a bit worried about autocorrelation over time... not sure how much of an issue it is with this kind of data... Dag?
 
 ```
