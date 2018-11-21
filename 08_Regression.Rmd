@@ -11,7 +11,7 @@ output:
 ---
 
 
-Regression analysis of (so far) hydrographic and plankton variables.
+Regression analysis of hydrographic and plankton variables.
   
 Check out package dynlm for including lagged variables - see https://stackoverflow.com/a/13096824/1734247 
 
