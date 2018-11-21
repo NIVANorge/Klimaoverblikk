@@ -297,14 +297,20 @@ HBdf <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
 names(HBdf)
 
 # coupling the two using dplyr, by Year
-HBdat <- left_join(HBdf, dat)
-names(HBdat)
+HBdat <- # joining and removing phyto from the nix
+  HBdf %>% 
+    filter(Site %in% c(407, 410)) %>% # filter on stations 407 and 410
+    left_join(dat, by = "Year") %>% # join
+    dplyr::select(-ends_with("_med")) # remove phytopl
 
-DCAhb <- HBdat[, 3:6]
-envHB <- HBdat[, 44:length(names(HBdat))]
+DCAhb <- HBdat %>% 
+  dplyr::select(DCA1:DCA4)
+
+envHB <- HBdat %>% 
+  dplyr::select(Chla_Deep:Winter_NAO)
 
 envfitHB <- envfit(DCAhb, envHB, na.rm = TRUE, permutations = 999, choices = 1:4)
-envfitHB # gives an indication of which parameters may be important for community responses along dca 1
+envfitHB # gives an indication of which parameters may be important for community responses along dca 1, 12 obs fjernes pga NA
 str(envfitHB)
 
 plot(DCAhb[1:2])
@@ -316,11 +322,6 @@ HBpar <- names(which(envfitHB$vectors$pvals < 0.01)) # names of parameters with 
 
 ### DCA - possible causal links
 ```{r fitting model for DCA}
-
-hist(HBdat$DCA1)
-hist((HBdat$DCA1)^(1/3))
-
-str(HBdat)
 
 # For use as random factor
 HBdat$Site <- as.character(HBdat$Site)
@@ -336,6 +337,7 @@ HBlmer <- lmer(sHB$formula, sHB$data)
 # Model selection
 # https://cran.r-project.org/web/packages/lmerTest/lmerTest.pdf 
 
-HBlmer.select <- step(HBlmer) # check envvar for missing values
+HBlmer_select <- lmerTest::step(HBlmer) # check envvar for missing values
+HBlmer_select
 
 ```
