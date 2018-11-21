@@ -357,3 +357,78 @@ HBlmer_select
 # a bit worried about autocorrelation over time... not sure how much of an issue it is with this kind of data... Dag?
 
 ```
+
+## Soft bottom
+### Environmental variables in relation to ordination
+```{r fitting environmental variables to ordination}
+dim(dat)
+
+# retrieving BB ordinations
+BB05df <- readr::read_csv2("Data_produced/BBordSites_05.csv")
+names(BB05df)
+BB35df <- readr::read_csv2("Data_produced/BBordSites_35.csv")
+names(BB35df)
+
+# coupling the two using dplyr, by Year
+BB05_dat <- # joining and removing phyto from the mix
+  BB05df %>% 
+    left_join(dat, by = "Year") %>% # join
+    dplyr::select(-ends_with("_med")) # remove phytopl
+
+DCA05 <- BB05_dat %>% 
+  dplyr::select(DCA1:DCA4)
+
+DCA35 <- BB35df %>% 
+  dplyr::select(DCA1:DCA4)
+
+envBB <- BB05_dat %>% 
+  dplyr::select(Chla_Deep:Winter_NAO)
+
+
+BB35_dat <- bind_cols(BB35df[,-1], envBB)
+
+envfitBB05 <- envfit(DCA05, envBB, na.rm = TRUE, permutations = 999, choices = 1:4)
+envfitBB05 # gives an indication of which parameters may be important for community responses 
+# 6 obs fjernes pga NA
+envfitBB35 <- envfit(DCA35, envBB, na.rm = TRUE, permutations = 999, choices = 1:4)
+envfitBB35 
+# 6 obs fjernes pga NA
+
+
+plot(DCA05[1:2])
+plot(envfitBB05, p.max = 0.05, add = TRUE)
+plot(DCA35[1:2])
+plot(envfitBB35, p.max = 0.05, add = TRUE)
+
+# plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
+
+BB05par <- names(which(envfitBB05$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+BB35par <- names(which(envfitBB35$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+
+```
+
+### DCA - possible causal links
+```{r fitting model for DCA}
+
+# Standarizing
+# https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html 
+
+BB05_fullformula <- as.formula(paste("DCA1 ~ ", paste(BB05par, collapse = " + "), sep = ""))
+BB35_fullformula <- as.formula(paste("DCA1 ~ ", paste(BB35par, collapse = " + "), sep = ""))
+
+sBB05 <- standardize(BB05_fullformula, BB05_dat)
+sBB35 <- standardize(BB35_fullformula, BB35_dat)
+
+# Model and selection
+BB05_lm <- lm(sBB05$formula, sBB05$data)
+BB05_select <- stepAIC(BB05_lm, direction = "both") # check envvar for missing values - will this be fixed?
+BB05_select
+
+BB05_dat %>%
+  summarise_all(funs(sum(is.na(.))))
+
+BB35_lm <- lm(sBB35$formula, sBB35$data)
+BB35_select <- stepAIC(BB35_lm, direction = "both") 
+BB35_select
+
+```

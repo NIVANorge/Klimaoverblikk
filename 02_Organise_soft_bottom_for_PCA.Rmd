@@ -376,7 +376,7 @@ df_long_2 <- df_blot_b35 %>%
 
 df_long <- bind_rows(df_long_1, df_long_2) %>%
   mutate(Site = substr(Siteyear, 1,3), Year = as.numeric(substr(Siteyear, 5,8))) %>%
-  select(Site, Year, Species, Value)
+  dplyr::select(Site, Year, Species, Value)
 
 str(df_long)
 head (df_long)
@@ -412,8 +412,8 @@ cat("Dimensions of 'spec.m_05':\n", dim(spec.m_05))
 ### d. Perform ordination
 ```{r}
 # Innledende DCA - litt usikker på utfallet 
-ord1_05 <- decorana(spec.m_05)
-ord1_35 <- decorana(spec.m_35)
+ord1_05 <- decorana(spec.m_05, iweigh = 1)
+ord1_35 <- decorana(spec.m_35, iweigh = 1)
 
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
@@ -470,6 +470,10 @@ ord1_05.df <- data.frame(spec_05[,c(1:2)], ord1_05.sites)
 
 ord1_35.sites <- data.frame(scores(ord1_35, display = "sites"))
 ord1_35.df <- data.frame(spec_35[,c(1:2)], ord1_35.sites)
+
+# skriver til csv
+write.csv2(ord1_05.df, row.names = FALSE, file = "Data_produced/BBordSites_05.csv")
+write.csv2(ord1_35.df, row.names = FALSE, file = "Data_produced/BBordSites_35.csv")
 
 # trekker ut species scores så de kan relateres til aksene
 ord1_05.species <- data.frame(scores(ord1_05, display = "species"))
