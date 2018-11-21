@@ -299,7 +299,8 @@ We're trying to find meaningful ways to describe the relationship between biolog
   + Probably different models for every system
   + Mixed effects for hard bottom (station as random)
   + GLM for soft bottom (one model per station for DCA at least) and plankton
-* Probably makes sense to use the same set of explanatory variables in model selection for every response
+* Probably makes sense to use the same set of explanatory variables in model selection for every response witin a system
+* Should perhaps add some variables as factors.
 
 ## Hard bottom
 ### Environmental variables in relation to ordination
@@ -431,4 +432,60 @@ BB35_lm <- lm(sBB35$formula, sBB35$data)
 BB35_select <- stepAIC(BB35_lm, direction = "both") 
 BB35_select
 
+```
+
+## Plankton
+### Environmental variables in relation to ordination
+```{r fitting environmental variables to ordination}
+dim(dat)
+
+# retrieving BB ordinations
+P01df <- readr::read_csv2("Data_produced/P01ord.csv")
+names(P01df)
+
+
+# coupling the two using dplyr, by Year
+P01_dat <- # joining and removing phyto from the mix
+  P01df %>% 
+    left_join(dat, by = "Year") %>% # join
+    dplyr::select(-ends_with("_med")) # remove phytopl
+
+DCA01 <- P01_dat %>% 
+  dplyr::select(DCA1:DCA4)
+
+envP01 <- P01_dat %>% 
+  dplyr::select(Chla_Deep:Winter_NAO)
+
+envfitP01 <- envfit(DCA01, envP01, na.rm = TRUE, permutations = 999, choices = 1:4)
+envfitP01 # gives an indication of which parameters may be important for community responses 
+
+plot(DCA01[1:2])
+plot(envfitP01, p.max = 0.05, add = TRUE)
+
+# plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
+# for plankton it looks like we might need to something about the ordination
+
+P01par <- names(which(envfitP01$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+
+```
+
+### DCA - possible causal links
+```{r fitting model for DCA}
+
+# Standarizing
+# https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html 
+
+P01_fullformula <- as.formula(paste("DCA1 ~ ", paste(P01par, collapse = " + "), sep = ""))
+
+sP01 <- standardize(P01_fullformula, P01_dat)
+
+# Model and selection
+P01_lm <- lm(sP01$formula, sP01$data)
+P01_select <- stepAIC(P01_lm, direction = "both") # check envvar for missing values - will this be fixed?
+P01_select
+
+P01_dat %>%
+  summarise_all(funs(sum(is.na(.))))
+
+summary(P01_select)
 ```
