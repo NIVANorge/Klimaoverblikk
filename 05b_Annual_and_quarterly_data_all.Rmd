@@ -12,9 +12,8 @@ output:
 
 Overview:   
 * Produces summarized data by year (ending in '_a') and quarter (ending in '_q') 
-* Reads data from delivered data files (rivers, hydrology) and ordination (plankton, hard-bottom, soft-bottom)   
+* Reads data from delivered data files (rivers, hydrology)  
 * Data produced are written to Data_produced (starting with '05_') for later use   
-* No need to add ordination "data" (ie., scores), they are already at annual level
 * HFR: annual plots of soft-bottom variables in script 01_ (section 4 c)
 
 ## 0. Libraries
@@ -68,8 +67,7 @@ df3 <- read_excel("Datasett/River data (from OKA)/Monthly loads/RIDx5_monthly lo
 df_rivers <- bind_rows(df1[-1,], df2[-1,], df3[-1,])
 
 # colnames(df_rivers) %>% dput()
-vars <- c("TrspTot TOTN", "TrspTot NO3-N", "TrspTot NH4-N", "TrspTot TOTP",           
-          "TrspTot TOC", "TrspTot ALK", "TrspTot Ca", "DisTot", "TrspTot PO4-P", "TrspTot SiO2", "TrspTot SPM")
+vars <- c("TrspTot TOTN", "TrspTot NO3-N", "TrspTot NH4-N", "TrspTot TOTP", "TrspTot TOC", "TrspTot ALK", "TrspTot Ca", "DisTot", "TrspTot PO4-P", "TrspTot SiO2", "TrspTot SPM")
 for (var in vars)
   df_rivers[[var]] <- as.numeric(df_rivers[[var]])
 df_rivers$Time <- with(df_rivers, lubridate::ymd(paste(Year, Month, "15")))
@@ -113,7 +111,8 @@ df_rivers <- rename(df_rivers, TotN = TrspTot_TOTN,
                     SPM = TrspTot_SPM,
                     Si = TrspTot_SiO2)
 
-#print (df_rivers)
+print (df_rivers)
+str (df_rivers)
 
 # Table of available data for each river
 tb <- df_rivers %>% 
@@ -166,35 +165,53 @@ ggsave ("Figures_rapp/Rivers_monthly_Q_Distant.png", width = 8, height = 6, dpi=
 
 ### d. Summarize by "local rivers"/"distant rivers"    
     * Data ending with _a = annual, ending in _q = quarter
-    * Exclude Otra  
+    * set seasons to match hydro and plankton
+    * after discussion w/ Øyvind exclude all "Local rivers" and set following years and variables to NA:  Si for 1990-1995, TOC for 1990-1991
     
 ```{r}
 #str (df_rivers)
 df <- df_rivers %>%
-  filter(!Station_name %in% "Otra") %>%
   mutate(River_type = 
            ifelse(substr(Station_name, 1, 4) %in% c("Nide","Sønd","Stor"), "Local", "Distant"))
+
 
 df_rivers_summ_a <- df %>% 
   group_by(River_type, Year) %>%
   summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)
 
+# NB! blir dette riktig?? får med 1989...
 df_rivers_summ_q <- df %>%
   mutate(Quarter = case_when(
-    Month %in% 1:3 ~ 1,
-    Month %in% 4:6 ~ 2,
-    Month %in% 7:9 ~ 3,
-    Month %in% 10:12 ~ 4
-  )) %>%
-  group_by(River_type, Year, Quarter) %>%
-  summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)
+    Month %in% 1 ~ 4,
+      Month %in% 2:4 ~ 1,
+      Month %in% 5:7 ~ 2,
+      Month %in% 8:10 ~ 3,
+      Month %in% 11:12 ~ 4),
+    Year2 = case_when(
+      Month == 1 ~ Year - 1,
+      Month > 1 ~ Year)
+    ) %>%
+  group_by(River_type, Year2, Quarter) %>%
+  summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)%>%
+  rename(Year = Year2)
 
-# setter 0 til NA (kan helt sikkert inkluderes over)
-df_rivers_summ_a <- df_rivers_summ_a %>%
+
+# exclude local rivers and set 0 i transport to NA, se comment above
+df_rivers_summ_a_t <- df_rivers_summ_a %>%
+  filter(River_type != "Local") %>% 
+  droplevels()%>% 
   mutate_all(funs(ifelse(. == 0, NA, .)))
 
-df_rivers_summ_q <- df_rivers_summ_q %>%
+df_rivers_summ_q_t <- df_rivers_summ_q %>%
+  filter(River_type != "Local") %>% 
+  droplevels() %>%
   mutate_all(funs(ifelse(. == 0, NA, .)))
+
+# set transport of TOC in 1990 and 1991 to NA (only sampled in Glomma, too low total transports)
+is.na (df_rivers_summ_a_t$TOC) <- 1:2
+
+is.na (df_rivers_summ_q_t$TOC) <- 1:9
+
 
 ```
 

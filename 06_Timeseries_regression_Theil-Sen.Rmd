@@ -43,7 +43,7 @@ library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's sl
 ### a. Read data
 ```{r}
 df_rivers_summ_a <- read.csv("Data_produced/05_df_rivers_summ_a.csv")
-df_rivergroup_springflood <- read.csv("Data_produced/05_df_rivergroup_springflood.csv")
+#df_rivergroup_springflood <- read.csv("Data_produced/05_df_rivergroup_springflood.csv")
 df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
 df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
 
