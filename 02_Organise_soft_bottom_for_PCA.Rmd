@@ -746,6 +746,9 @@ ord_phyto01.df <- data.frame(Year = bloom_01_median$Year, ord_phyto01.sites)
 ord_phyto02.sites <- data.frame(scores(ord_phyto02, display = "sites"))
 ord_phyto02.df <- data.frame(Year = bloom_02$Year, ord_phyto02.sites)
 
+# skriver csv
+write.csv2(ord_phyto01.df, row.names = FALSE, file = "Data_produced/P01ord.csv")
+
 str(ord_phyto02.df)
 
 # NMDS
