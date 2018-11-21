@@ -67,7 +67,10 @@ dat.pca <- dat[complete.cases(dat), ]
 
 dim(dat)
 dim(dat.pca) # 9 rows removed (9 years)
-unique(dat.pca$Year) # mangler noe siden 2011
+unique(dat.pca$Year) # mangler noe siden 2011, bør vurdere å fjerne disse parameterne
+
+dat %>%
+  summarise_all(funs(sum(is.na(.))))
 
 # ser på miljøvarabelrommet
 var.pca <- rda(dat.pca[,-1], scale = TRUE)
