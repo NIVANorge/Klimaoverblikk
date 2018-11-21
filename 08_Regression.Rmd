@@ -20,14 +20,15 @@ Check out package dynlm for including lagged variables - see https://stackoverfl
 library(tidyverse)
 library(readxl)
 library(MASS)
+library (ggplot2)
 #install.packages("visreg")
 library(visreg)
 library(vegan)
 library(lme4) # for mixed effect models
+#install.packages("standardize")
 library(standardize) # standardize data for modelling
+#install.packages("afex")
 library(afex) # adding p-values to lmer output
-library(vegan)
-library(ggplot2)
 
 # library(pander)
 ```
@@ -50,6 +51,7 @@ dat <-
   dat_a %>% 
   spread(Variable, Value)
 ```
+
 
 ### d. Add NAO data
 ```{r}
@@ -77,6 +79,7 @@ dat %>%
 # ser på miljøvarabelrommet
 var.pca <- rda(dat.pca[,-1], scale = TRUE)
 envvar  <- data.frame(scores(var.pca, display = "species"))
+head(envvar)
 years   <- data.frame(scores(var.pca, display = "sites"))
 
 pca_all <- bind_rows(envvar, years)
@@ -93,13 +96,13 @@ envvarplot <- pca_all %>%
                  size = 0.1, col = "dark gray") +
   geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*10, y = PC2*10, label = obj),  color = "red", size = 3)
 
+  
 envvarplot
 
 # Guri to Helene:
 # consider removing phytoplankton by f.inst. dplyr::select(-ends_with("_med"))
 # make two PCA-ordinations: 
 # one for predictors and one for hydrographic responses
-
 
 ```
 

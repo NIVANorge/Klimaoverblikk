@@ -723,13 +723,13 @@ write.csv(df_plank_summ_q, "Data_produced/05_df_plank_summ_q.csv", row.names = F
 ### e1. Plot medians by year
 ```{r}
 
-#str(df_plank_summ_a)
+str(df_plank_summ_a)
 
 df_plank_summ_a %>%
-  gather("Group", "Median", Kiselalger_med:Total_med) %>%
+  gather("Group", "Median", Kiselalger_med:Flagellater_med) %>%
   ggplot(aes(Year, Median/1E6)) +
     geom_smooth() + geom_point() +
-    facet_grid(Group~., scales = "free_y") +
+    facet_grid(Group~., scales = "free_y")
     #labs (y = "Median")
 
 ggsave ("Figures_rapp/Plankton_a_Groups.png", width = 8, height = 6, dpi=500)

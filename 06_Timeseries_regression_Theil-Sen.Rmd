@@ -15,7 +15,8 @@ Non-parametric tests for trends over time
     + Annual data (ending in _a, plus rivergroup_springflood)
     + Seasonal data (for seasons separately)
 * For seasonal data, note that hydrography + plankton seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
-* Uses data from script 05  
+* Uses data from script 05 ( ex. df_rivers_summ_a)
+* produces summarized data from different datatypes onn annual (Dat_a) and quarterly (Dat_q) for use in regression models (08_regression)
 * Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
 
 
