@@ -791,7 +791,7 @@ df_plank_summ_a <- df_plank %>%
   mutate(Total = Kiselalger + Dinoflagellater + Flagellater) %>%
   group_by(Year) %>%
   summarize_at(.vars = vars(Kiselalger:Flagellater, Total), 
-               .funs = funs(med = median, max = max)
+               .funs = funs(med = mean, max = max)
                )
 
 df_plank_summ_q <- df_plank %>%
@@ -809,7 +809,7 @@ df_plank_summ_q <- df_plank %>%
     ) %>%
   group_by(Year2, Quarter) %>%
   summarize_at(.vars = vars(Kiselalger:Flagellater, Total), 
-               .funs = funs(med = median, max = max)
+               .funs = funs(med = mean, max = max)
                ) %>%
   rename(Year = Year2)
 
@@ -839,11 +839,10 @@ write.csv(df_plank_summ_q, "Data_produced/05_df_plank_summ_q.csv", row.names = F
 str(df_plank_summ_a)
 
 df_plank_summ_a %>%
-  gather("Group", "Median", Diatoms:Flagellates) %>%
-  ggplot(aes(Year, Median/1E6)) +
+  gather("Group", "Value", Diatoms:Flagellates) %>%
+  ggplot(aes(Year, Value)) +
     geom_smooth() + geom_point() +
     facet_grid(Group~., scales = "free_y")
-    #labs (y = "Median")
 
 ggsave ("Figures_rapp/Plankton_a_Groups.png", width = 8, height = 6, dpi=500)
 
@@ -853,9 +852,9 @@ ggsave ("Figures_rapp/Plankton_a_Groups.png", width = 8, height = 6, dpi=500)
 ### e2. Plot medians by quarter
 ```{r}
 df_plank_summ_q %>%
-  gather("Group", "Median", Diatoms:Flagellates) %>%
-  mutate(Quarter = paste("Quarter", Quarter)) %>%
-  ggplot(aes(Year, Median/1E6)) +
+  gather("Group", "Value", Diatoms:Flagellates) %>%
+  #mutate(Quarter = paste("Quarter", Quarter)) %>%
+  ggplot(aes(Year, Value), ylim(c(0, NA))) +
     geom_smooth() + geom_point() +
     facet_grid(Group~Quarter, scales = "free_y")
 
