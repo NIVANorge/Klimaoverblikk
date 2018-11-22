@@ -179,6 +179,7 @@ df_rivers_summ_a <- df %>%
   group_by(River_type, Year) %>%
   summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)
 
+
 # NB! blir dette riktig?? får med 1989...
 df_rivers_summ_q <- df %>%
   mutate(Quarter = case_when(
@@ -192,7 +193,7 @@ df_rivers_summ_q <- df %>%
       Month > 1 ~ Year)
     ) %>%
   group_by(River_type, Year2, Quarter) %>%
-  summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)%>%
+  summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE) %>%
   rename(Year = Year2)
 
 
@@ -546,6 +547,55 @@ df_hydro_summ_q$Depth <- factor(df_hydro_summ_q$Depth,
 df_hydro_summ_a$DIN <- df_hydro_summ_a$NO2_NO3 + df_hydro_summ_a$NH4
 df_hydro_summ_q$DIN <- df_hydro_summ_q$NO2_NO3 + df_hydro_summ_q$NH4
 
+```
+
+### b2. Gap in TSM - plot
+```{r}
+ggplot(df_hydro_summ_a, aes(Year, TSM)) +
+  geom_line() + geom_point() +
+  facet_grid(.~Depth)
+
+ggplot(df_hydro_summ_q, aes(Year, TSM)) +
+  geom_line() + geom_point() +
+  facet_grid(Quarter~Depth)
+```
+
+### b3. Gap in TSM - interpolate data    
+Using na.approx from the zoo package  
+```{r}
+
+for (dep in unique(df_hydro_summ_a$Depth)){
+  sel <- df_hydro_summ_a$Depth == dep
+  x <- zoo(df_hydro_summ_a$TSM[sel])
+  df_hydro_summ_a$TSM[sel]  <- as.numeric(na.approx(x))
+}
+
+
+for (dep in unique(df_hydro_summ_q$Depth)){
+  for (qu in 1:4){
+    sel <- with(df_hydro_summ_q, Depth == dep & Quarter == qu)
+    x <- zoo(df_hydro_summ_q$TSM[sel])
+    df_hydro_summ_q$TSM[sel]  <- as.numeric(na.approx(x))
+  }
+}
+
+```
+
+### b3. Gap in TSM - plot interpolation
+```{r}
+df_hydro_summ_a %>% 
+  mutate(Interpol = Year %in% 2012:2013) %>%
+  ggplot(aes(Year, TSM)) +
+  geom_line() + geom_point(aes(color = Interpol)) +
+  scale_color_manual(values = c("black","red")) +
+  facet_grid(.~Depth)
+
+df_hydro_summ_q %>% 
+  mutate(Interpol = Year %in% 2012:2013) %>%
+  ggplot(aes(Year, TSM)) +
+  geom_line() + geom_point(aes(color = Interpol)) +
+  scale_color_manual(values = c("black","red")) +
+  facet_grid(Quarter~Depth)
 ```
 
 ### c. Save
