@@ -661,6 +661,7 @@ ggsave ("Figures_rapp/SoftFaunaDCA_35.png", BBartOrd_35, width = 6, height = 10,
 ## 3. Reorganise phytoplankton data and test ordination
 ### a. Data
 Use extraction of phytoplankton data during springbloom produced in "04_Get_plankton_bloom_data.Rmd"
+HFR comment: agreed with Lars that we use Bloom_02
 ```{r}
 
 require(RCurl)
@@ -685,8 +686,8 @@ bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Kli
 spec.m_phyto_01 = bloom_01_median[, -c(1,17:20)]
 spec.m_phyto_02 = bloom_02[, -c(1:4,20:26)]
 
+cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto_01))
 cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto_02))
-cat("Dimensions of 'spec.m_phyto':\n", dim(spec.m_phyto))
 
 ```
 
@@ -704,7 +705,6 @@ ord_phyto02 <- decorana(spec.m_phyto_02)
 nmds_phyto01 <- metaMDS(spec.m_phyto_01)
 nmds_phyto02 <- metaMDS(spec.m_phyto_02)
 
- ord2
  
 
 ```
@@ -746,8 +746,9 @@ ord_phyto01.df <- data.frame(Year = bloom_01_median$Year, ord_phyto01.sites)
 ord_phyto02.sites <- data.frame(scores(ord_phyto02, display = "sites"))
 ord_phyto02.df <- data.frame(Year = bloom_02$Year, ord_phyto02.sites)
 
-# skriver csv
+# skriver til csv
 write.csv2(ord_phyto01.df, row.names = FALSE, file = "Data_produced/P01ord.csv")
+write.csv2(ord_phyto02.df, row.names = FALSE, file = "Data_produced/P02ord.csv")
 
 str(ord_phyto02.df)
 

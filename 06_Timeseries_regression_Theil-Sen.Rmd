@@ -14,9 +14,10 @@ Non-parametric tests for trends over time
 * Performed both on
     + Annual data (ending in _a, plus rivergroup_springflood)
     + Seasonal data (for seasons separately)
-* For seasonal data, note that hydrography + plankton seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
-* Uses data from script 05 ( ex. df_rivers_summ_a)
+* For seasonal data, note that hydrography + plankton + river seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
+* Uses data from script 05b_ ( ex. df_rivers_summ_a)
 * produces summarized data from different datatypes onn annual (Dat_a) and quarterly (Dat_q) for use in regression models (08_regression)
+* produces plots of time series trends (Kap 3.2) for quarterly and annual data for the report
 * Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
 
 
@@ -41,11 +42,44 @@ library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's sl
 
 ## 1. Data (annual and partly seasonal)  
 ### a. Read data
+* rivers, hydrography and plankton are gathered from annual datasets produced in 05b_
+* ON HOLD: indices and ordinations for plankton, soft and hard-bottom. 
 ```{r}
+
+# rivers
 df_rivers_summ_a <- read.csv("Data_produced/05_df_rivers_summ_a.csv")
 #df_rivergroup_springflood <- read.csv("Data_produced/05_df_rivergroup_springflood.csv")
+
+#hydrography
 df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
+
+# plankton groups and ordination (use Bloom2)
 df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
+
+# ON HOLD: ordinations and indices
+# df_plank_ord <- readr::read_csv2("Data_produced/P02ord.csv")
+# 
+# # soft bottom indices and ordinations
+# df_blot_ind <- read.csv("Data_produced/01_df_blot_ind.csv")
+# # retrieving softbottom ordinations ordinations
+# df_blot_ord_05 <- readr::read_csv2("Data_produced/BBordSites_05.csv")
+# #names(df_blot_ord_05)
+# df_blot_ord_35 <- readr::read_csv2("Data_produced/BBordSites_35.csv")
+# #names(df_blot_ord_35)
+# # rename soft-bottom stations
+# levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B05"] <- "BR1"
+# levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B35"] <- "BT44"
+#                           
+# # hard-bottom indices and ordinations
+# df_hard <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
+# # rename hard-bottom stations
+# df_hard$Site[which(df_hard$Site==407)]<-"HT113"
+# df_hard$Site[which(df_hard$Site==410)]<-"HR104"
+# #str(df_hard)
+# # select only the two stations we use
+# df_hard <- df_hard %>%
+#   filter(Site %in% c("HT113", "HR104"))
+
 
 ```
 
@@ -53,44 +87,84 @@ df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
-str(df_rivers_summ_a)
 
-df1a <- df_rivers_summ_a %>%
-  mutate(DisTot = Discharge/1E3) %>%
-  gather("Variable", "Value", TotN:Discharge) %>%
-  mutate(River_type = paste0("River_", River_type),
-         Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
-  mutate(Variable = paste0(River_type, "_", Variable),
-         Value = Value/1E3) %>%
+# df1 = rivers
+#str(df_rivers_summ_a)
+df1 <- df_rivers_summ_a %>%
+  mutate(Discharge = Discharge/1E3) %>%
+  gather("Variable", "Value", TotN:Si) %>%
+  mutate(Variable = paste0("River", "_", Variable)) %>%
+  mutate(Value = Value/1E3) %>%
   select(Variable, Year, Value)
+
+# HFR: removed these lines because only use distant river group
+  #mutate(River_type = paste0("River_", River_type),
+   #      Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
+  #mutate(Variable = paste0(River_type, "_", Variable),
+         #Value = Value/1E3) %>%
 
 # head(df1a)
 #df1 %>% group_by(Variable) %>% summarise(mean(Value, na.rm = TRUE))
 
-df1b <- df_rivergroup_springflood %>%
-  rename(Floodmax = DisTot_max_rel, FloodmaxMonth = DisTot_max_month) %>%
-  gather("Variable", "Value", Floodmax, FloodmaxMonth) %>%
-  mutate(River_type = paste0("River_", River_type)) %>%
-  mutate(Variable = paste0(River_type, "_", Variable)) %>%
-  select(Variable, Year, Value)
+#df1b <- df_rivergroup_springflood %>%
+ #rename(Floodmax = DisTot_max_rel, FloodmaxMonth = DisTot_max_month) %>%
+# gather("Variable", "Value", Floodmax, FloodmaxMonth) %>%
+ # mutate(River_type = paste0("River_", River_type)) %>%
+#  mutate(Variable = paste0(River_type, "_", Variable)) %>%
+ # select(Variable, Year, Value)
 # head(df1b)
 
-str(df_hydro_summ_a)
+#df2= hydrography
+#str(df_hydro_summ_a)
 df2 <- df_hydro_summ_a %>%
   gather("Variable", "Value", Temperature, Salinity, O2, PO4, Si, Chla:DIN) %>%
-  mutate(Variable = paste0(Variable, "_", Depth)) %>%
+  mutate(Variable = paste0("Hydro", "_", Variable, "_", Depth)) %>%
   filter(!(Variable %in% c("Secchi_Intermediate", "Secchi_Deep"))) %>%
   select(Variable, Year, Value)
 
- #head(df2)
-
-df3 <- df_plank_summ_a %>%
-  gather("Variable", "Value", Kiselalger_med:Total_med) %>%
+# df3a= plankton groups
+#str (df_plank_summ_a)
+df3a <- df_plank_summ_a %>%
+  gather("Variable", "Value", Diatoms:Flagellates) %>%
+  mutate(Variable = paste0("Plankton", "_", Variable)) %>%
   select(Variable, Year,Value)
-# head(df3)
 
+#ON HOLD: ordinations and indices
+# # df3b= plankton DCA1
+# df3b <- df_plank_ord %>%
+#   gather("Variable", "Value", DCA1) %>%
+#   mutate(Variable = paste0("Plankton", "_", Variable)) %>%
+#   select(Variable, Year,Value)
+# 
+# # df4a = soft-bottom NQI
+# #str (df_blot_ind)
+# df4a <- df_blot_ind %>%
+#   gather("Variable", "Value", NQI1) %>%
+#   mutate(Variable = paste0("SoftBottom", "_", Variable, "_", STAS)) %>%
+#   select(Variable, Year, Value)
+# 
+# # df4b + c = Soft-bottom ordinations for stations BR1 and BT44
+# df4b <- df_blot_ord_05 %>%
+#   gather("Variable", "Value", DCA1) %>%
+#   mutate(Variable = paste0("SoftBottom", "_", Variable, "_", "BR1")) %>%
+#   select(Variable, Year,Value)
+# 
+# df4c <- df_blot_ord_35 %>%
+#   gather("Variable", "Value", DCA1) %>%
+#   mutate(Variable = paste0("SoftBottom", "_", Variable, "_", "BT44")) %>%
+#   select(Variable, Year, Value)
+# 
+# # df5 =  Hard bottom DCA1 and LGD for different species (can we summarize species?)
+# #str (df_hard)
+# df5 <- df_hard %>%
+#   gather("Variable", "Value", DCA1, "LGD.Halidrys siliquosa":"LGD.Rhodomela confervoides") %>%
+#   mutate(Variable = paste0("HardBottom", "_", Variable)) %>%
+#   select(Variable, Year,Value)
 
-dat_a <- rbind(df1a, df1b, df2, df3) %>% as.data.frame()
+# collect all datasets
+
+#df3b, df4a, df4b, df4c, df5 #ON HOLD
+dat_a <- rbind(df1, df2, df3a) %>% as.data.frame()
 #head(dat_a)
 ```
 
@@ -100,20 +174,22 @@ df_rivers_summ_q <- read.csv("Data_produced/05_df_rivers_summ_q.csv")
 df_hydro_summ_q <- read.csv("Data_produced/05_df_hydro_summ_q.csv")
 df_plank_summ_q <- read.csv("Data_produced/05_df_plank_summ_q.csv")
 
-str (df_rivers_summ_q)
+#str (df_rivers_summ_q)
+#str (df_hydro_summ_q)
+#str (df_plank_summ_q)
+
 ```
 
 ### d. Collect quarterly data  
 * River data
     + discharge divided by 1 million, the rest divided by 1000
 ```{r}
+
 df1 <- df_rivers_summ_q %>%
   mutate(Discharge = Discharge/1E3) %>%
-  gather("Variable", "Value", TotN:Discharge) %>%
-  mutate(River_type = paste0("River_", River_type),
-         Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
-  mutate(Variable = paste0(River_type, "_", Variable),
-         Value = Value/1E3) %>%
+  gather("Variable", "Value", TotN:Si) %>%
+  mutate(Variable = paste0("River", "_", Variable)) %>%
+  mutate(Value = Value/1E3) %>%
   select(Variable, Year, Quarter, Value)
 
 head(df1)
@@ -130,7 +206,7 @@ df2 <- df_hydro_summ_q %>%
 #head(df2)
 
 df3 <- df_plank_summ_q %>%
-  gather("Variable", "Value", Kiselalger_med:Total_med) %>%
+  gather("Variable", "Value", Diatoms:Flagellates) %>%
   select(Variable, Year, Quarter, Value)
 head(df3)
 
@@ -256,6 +332,7 @@ ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), size = facto
 
 
 ### c. Plot for all seasons
+* HFR: rather color code variables by datatype (river, hydro, plankton), instead of having it as prefix to variable?
 ```{r, fig.width = 7, fig.height=9}
 df_mean <- df_result_q  %>%
   group_by(Variable) %>%

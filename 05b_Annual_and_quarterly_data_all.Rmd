@@ -14,7 +14,7 @@ Overview:
 * Produces summarized data by year (ending in '_a') and quarter (ending in '_q') 
 * Reads data from delivered data files (rivers, hydrology)  
 * Data produced are written to Data_produced (starting with '05_') for later use   
-* HFR: annual plots of soft-bottom variables in script 01_ (section 4 c)
+* HFR: Annual time seies plots for report (Kap 3.1) are produced here, except plots of soft-bottom (pkt 4c) and hard-bottom (pkt 5) variables which are in script 01_ , 
 
 ## 0. Libraries
 ```{r}
@@ -180,7 +180,7 @@ df_rivers_summ_a <- df %>%
   summarise_at(c("TotN", "NO3", "TotP", "TOC", "Discharge", "PO4", "SPM", "Si"), sum, na.rm = TRUE)
 
 
-# NB! blir dette riktig?? får med 1989...
+# NB!season 4 for 1989 gets included...
 df_rivers_summ_q <- df %>%
   mutate(Quarter = case_when(
     Month %in% 1 ~ 4,
@@ -197,21 +197,21 @@ df_rivers_summ_q <- df %>%
   rename(Year = Year2)
 
 
-# exclude local rivers and set 0 i transport to NA, se comment above
-df_rivers_summ_a_t <- df_rivers_summ_a %>%
+# exclude local rivers and set 0 i transport to NA (ie. Si vars from 1990-1995), se comment above
+df_rivers_summ_a <- df_rivers_summ_a %>%
   filter(River_type != "Local") %>% 
   droplevels()%>% 
   mutate_all(funs(ifelse(. == 0, NA, .)))
 
-df_rivers_summ_q_t <- df_rivers_summ_q %>%
+df_rivers_summ_q <- df_rivers_summ_q %>%
   filter(River_type != "Local") %>% 
   droplevels() %>%
   mutate_all(funs(ifelse(. == 0, NA, .)))
 
-# set transport of TOC in 1990 and 1991 to NA (only sampled in Glomma, too low total transports)
-is.na (df_rivers_summ_a_t$TOC) <- 1:2
+# set transport of TOC in 1990 and 1991 to NA (only sampled in Glomma, yields unrealistic low total transports for these years)
+is.na (df_rivers_summ_a$TOC) <- 1:2
 
-is.na (df_rivers_summ_q_t$TOC) <- 1:9
+is.na (df_rivers_summ_q$TOC) <- 1:9
 
 
 ```
@@ -221,6 +221,37 @@ is.na (df_rivers_summ_q_t$TOC) <- 1:9
 ```{r}
 # geom_ma: sma= simple moving average, rolling mean over a period defined by n
 #geom_ma(ma_fun = SMA, n = 5, linetype = 1, size = 1) +
+
+#### USE - annual time series plots for rivers (Kap 3.1)
+
+# Distant - several vars
+df_rivers_summ_a %>%
+  mutate(Discharge = Discharge/1E3) %>%
+  gather("Variable", "Value", TotN:Si) %>%
+  #mutate(Var=factor(Var, levels = c("Temperature", "Salinity", "O2", "DIN", "PO4", "Si", "Chla", "TotN", "TotP", "POC", "PON", "POP", "TSM", "Secchi")))  %>%
+  mutate(Value = Value/1E3) %>%
+  filter(River_type %in% "Distant") %>%
+  ggplot(aes(Year, Value)) + 
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Variable, scales = "free_y", nrow = 4)
+
+ggsave ("Figures_rapp/Rivers_a_Distant_all.png", width = 8, height = 6, dpi=500)
+
+#### NOT USE
+# Local - several vars
+df_rivers_summ_a %>%
+  #mutate(Discharge = Discharge/1E3) %>%
+  gather("Variable", "Value", TotN:Discharge) %>%
+  #mutate(Value = Value/1E3) %>%
+  filter(River_type %in% "Local") %>%
+  ggplot(aes(Year, Value)) + 
+    geom_point() +
+    geom_smooth() +
+    facet_wrap(~Variable, scales = "free_y", )
+
+#ggsave ("Figures_rapp/Rivers_a_Local_all.png", width = 8, height = 6, dpi=500)
+
 
 str (df_rivers_summ_a)
 
@@ -236,18 +267,6 @@ ggplot(df_rivers_summ_a, aes(Year, TotN/1E3)) +
   geom_point() + 
   facet_wrap(~River_type, scales = "free_y") +
   labs(x = "Year", y= "TotN (/1000)")
-
-
-# Annual time series plot with many vars - both river types
-df_rivers_summ_a %>%
-  gather("Var", "Concentration", TotN, NO3, TotP, TOC) %>%
-  #mutate(Var=factor(Var, levels = c("Temperatur", "Salt", "O2")))  %>%
-  ggplot(aes(Year, Concentration/1E3, color = River_type)) +
-    geom_smooth(method = "lm") +
-    geom_point() +
-    facet_wrap(~Var, scales = "free_y")
-
-ggsave ("Figures_rapp/Hydro_1.png", width = 8, height = 6, dpi=500)
 
 
 # Annual time series with one variable - divided by river type
@@ -290,34 +309,6 @@ ggplot(df_rivers_summ_a, aes(Year, TOC/1E3, color = River_type)) +
 
 str(df_rivers_summ_a)
 
-# HFR: NB! no scaling used here for now - need to discuss w/Øyvind
-
-# Distant - several vars
-df_rivers_summ_a %>%
-  #mutate(Discharge = Discharge/1E3) %>%
-  gather("Variable", "Value", TotN:Si) %>%
-  #mutate(Value = Value/1E3) %>%
-  filter(River_type %in% "Distant") %>%
-  ggplot(aes(Year, Value)) + 
-    geom_point() +
-    geom_smooth() +
-    facet_wrap(~Variable, scales = "free_y")
-
-ggsave ("Figures_rapp/Rivers_a_Distant_all.png", width = 8, height = 6, dpi=500)
-
-# Local - several vars
-df_rivers_summ_a %>%
-  #mutate(Discharge = Discharge/1E3) %>%
-  gather("Variable", "Value", TotN:Discharge) %>%
-  #mutate(Value = Value/1E3) %>%
-  filter(River_type %in% "Local") %>%
-  ggplot(aes(Year, Value)) + 
-    geom_point() +
-    geom_smooth() +
-    facet_wrap(~Variable, scales = "free_y")
-
-ggsave ("Figures_rapp/Rivers_a_Local_all.png", width = 8, height = 6, dpi=500)
-
 # arrange the two plots next to eachother
 #ggg <- plot_grid(gg1, gg2, labels = c('(Distant)', '(Local)'), ncol = 2)
 # For better results, increase margin on left side of plot  
@@ -331,41 +322,83 @@ ggsave ("Figures_rapp/Rivers_a_Local_all.png", width = 8, height = 6, dpi=500)
 ```{r}
 str(df_rivers_summ_q)
 
+
+### USE seasonal time series for rivers (Appendix)
+
+# Distant - several vars
+df_rivers_summ_q %>%
+  mutate(Discharge = Discharge/1E3) %>%
+  gather("Var", "Value", Discharge, SPM, TOC) %>%
+  mutate(Var=factor(Var, levels = c("Discharge", "SPM", "TOC")))  %>%
+  mutate(Value = Value/1E3) %>%
+    ggplot(aes(Year, Value)) +
+      geom_smooth() + 
+      geom_point() +
+      facet_grid(Var~Quarter, scales = "free_y")
+
+ggsave ("Figures_rapp/Rivers_q_Dis_SPM_TOC.png", width = 8, height = 6, dpi=500)
+
+df_rivers_summ_q %>%
+  gather("Var", "Value", NO3, Si, PO4) %>%
+  mutate(Var=factor(Var, levels = c("NO3", "PO4", "Si")))  %>%
+  mutate(Value = Value/1E3) %>%
+    ggplot(aes(Year, Value)) +
+      geom_smooth() + 
+      geom_point() +
+      facet_grid(Var~Quarter, scales = "free_y")
+
+ggsave ("Figures_rapp/Rivers_q_NO3_PO4_Si.png", width = 8, height = 6, dpi=500)
+
+df_rivers_summ_q %>%
+  mutate(Discharge = Discharge/1E3) %>%
+  gather("Var", "Value", TotN, TotP) %>%
+  mutate(Var=factor(Var, levels = c("TotN", "TotP")))  %>%
+  mutate(Value = Value/1E3) %>%
+    ggplot(aes(Year, Value)) +
+      geom_smooth() + 
+      geom_point() +
+      facet_grid(Var~Quarter, scales = "free_y")
+
+ggsave ("Figures_rapp/Rivers_q_TotN_TotP.png", width = 8, height = 6, dpi=500)
+
+#### NOT USE
+
+## by river type (local, distant)
 # plot with onve variable - divided by river type and quarter
 ggplot(df_rivers_summ_q, aes(Year, Discharge)) +
   geom_smooth() +
   geom_point() + 
   facet_grid(River_type~Quarter, scales = "free_y")
 
-ggsave ("Figures_rapp/Rivers_q_Discharge.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_q_Discharge.png", width = 8, height = 6, dpi=500)
 
 ggplot(df_rivers_summ_q, aes(Year, NO3)) +
   geom_smooth() +
   geom_point() + 
   facet_grid(River_type~Quarter, scales = "free_y")
 
-ggsave ("Figures_rapp/Rivers_q_NO3.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_q_NO3.png", width = 8, height = 6, dpi=500)
 
 ggplot(df_rivers_summ_q, aes(Year, TotN)) +
   geom_smooth() +
   geom_point() + 
   facet_grid(River_type~Quarter, scales = "free_y")
 
-ggsave ("Figures_rapp/Rivers_q_TotN.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_q_TotN.png", width = 8, height = 6, dpi=500)
 
 ggplot(df_rivers_summ_q, aes(Year, TotP)) +
   geom_smooth() +
   geom_point() + 
   facet_grid(River_type~Quarter, scales = "free_y")
 
-ggsave ("Figures_rapp/Rivers_q_TotP.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_q_TotP.png", width = 8, height = 6, dpi=500)
 
 ggplot(df_rivers_summ_q, aes(Year, TOC)) +
   geom_smooth() +
   geom_point() + 
   facet_grid(River_type~Quarter, scales = "free_y")
 
-ggsave ("Figures_rapp/Rivers_q_TOC.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_q_TOC.png", width = 8, height = 6, dpi=500)
 
 
 ```
@@ -481,8 +514,8 @@ df_rivergroup_springflood %>%
 ```{r}
 write.csv(df_rivers_summ_a, "Data_produced/05_df_rivers_summ_a.csv", row.names = FALSE, quote = FALSE)
 write.csv(df_rivers_summ_q, "Data_produced/05_df_rivers_summ_q.csv", row.names = FALSE, quote = FALSE)
-write.csv(df_rivergroup_springflood, "Data_produced/05_df_rivergroup_springflood.csv", 
-          row.names = FALSE, quote = FALSE)
+#write.csv(df_rivergroup_springflood, "Data_produced/05_df_rivergroup_springflood.csv", 
+         # row.names = FALSE, quote = FALSE)
 ```
 
 
@@ -589,6 +622,8 @@ df_hydro_summ_a %>%
   geom_line() + geom_point(aes(color = Interpol)) +
   scale_color_manual(values = c("black","red")) +
   facet_grid(.~Depth)
+
+ggsave ("Figures_rapp/Hydro_interp_TSM.png", width = 8, height = 6, dpi=500)
 
 df_hydro_summ_q %>% 
   mutate(Interpol = Year %in% 2012:2013) %>%
@@ -778,6 +813,17 @@ df_plank_summ_q <- df_plank %>%
                ) %>%
   rename(Year = Year2)
 
+# rename kolonner
+df_plank_summ_a <- rename(df_plank_summ_a, Diatoms = Kiselalger_med,
+                    Dinoflagellates = Dinoflagellater_med,
+                    Flagellates = Flagellater_med
+                    )
+
+df_plank_summ_q <- rename(df_plank_summ_q, Diatoms = Kiselalger_med,
+                    Dinoflagellates = Dinoflagellater_med,
+                    Flagellates = Flagellater_med
+                    )
+
 ```
 
 ### d. Save
@@ -793,7 +839,7 @@ write.csv(df_plank_summ_q, "Data_produced/05_df_plank_summ_q.csv", row.names = F
 str(df_plank_summ_a)
 
 df_plank_summ_a %>%
-  gather("Group", "Median", Kiselalger_med:Flagellater_med) %>%
+  gather("Group", "Median", Diatoms:Flagellates) %>%
   ggplot(aes(Year, Median/1E6)) +
     geom_smooth() + geom_point() +
     facet_grid(Group~., scales = "free_y")
@@ -807,7 +853,7 @@ ggsave ("Figures_rapp/Plankton_a_Groups.png", width = 8, height = 6, dpi=500)
 ### e2. Plot medians by quarter
 ```{r}
 df_plank_summ_q %>%
-  gather("Group", "Median", Kiselalger_med:Total_med) %>%
+  gather("Group", "Median", Diatoms:Flagellates) %>%
   mutate(Quarter = paste("Quarter", Quarter)) %>%
   ggplot(aes(Year, Median/1E6)) +
     geom_smooth() + geom_point() +
@@ -818,7 +864,7 @@ ggsave ("Figures_rapp/Plankton_q_Groups.png", width = 8, height = 6, dpi=500)
 ### f. Plot maxima
 ```{r}
 df_plank_summ_q %>%
-  gather("Group", "Maximum", Kiselalger_max:Total_max) %>%
+  gather("Group", "Maximum", Diatoms:Flagellates) %>%
   mutate(Quarter = paste("Quarter", Quarter)) %>%
   ggplot(aes(Year, Maximum/1E6)) +
     geom_smooth(method = "lm") + geom_point() +

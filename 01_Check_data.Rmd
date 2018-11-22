@@ -139,13 +139,13 @@ Df.Arendal %>%
 
 
 ## 4. Soft bottom fauna  
-### a. Data
 
 ***Helene comments:*** 
 * plot og test av trend spesielt relevant for No.species, No.ind, NQI1, H, TOC (alle i df_blot_ind), har laget noen plot i pkt c under. 
 * diskuterte litt med Guri om hvordan vi evn skal plotte trender i artsammensetning (artslistene) over tid, dette går jo inn i ordinasjonsanalysen, og Guri mente det kanskje var best (hvertfall for hardbunn) å heller hente ut tidskorrelerte endringer i artsammensetning fra DCA1-aksen. 
 
-
+### a. Data
+* after instruction from Hilde we removed the TOC data from 2014 and sediement fine fraction (63um) for 2012 (measurements errors due to chanage in laboratory). 
 ```{r}
 # species list station B35
 df_blot_b35 <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "B35_artsliste")
@@ -161,10 +161,16 @@ cat("Number of species:", nrow(df_blot_b35), "\nNumber of years:", ncol(df_blot_
 # indices and sediment parameters
 df_blot_ind <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "indekser_sedimentparametere")
 
-str(df_blot_ind)
-
 # rename variables
-df_blot_ind <- rename (df_blot_ind, H = "H'", No.species = "No. species", No.ind = "No. ind.")
+df_blot_ind <- rename (df_blot_ind, H = "H'", No.species = "No. species", No.ind = "No. ind.", Fine.Fraction = "%<63um")
+
+# setter TOC i 2014 til NA
+df_blot_ind <- df_blot_ind %>%
+  mutate(TOC = ifelse(Year == 2014, NA, TOC))
+
+# Setter Fine.Fraction i 2012 til NA  
+df_blot_ind <- df_blot_ind %>%
+  mutate(Fine.Fraction = ifelse(Year == 2012, NA, Fine.Fraction))
 
 # take mean of individual grabs pr year and station
 df_blot_ind <- df_blot_ind %>%
@@ -224,7 +230,7 @@ str(df_blot_ind)
 df_blot_ind %>%
   gather("Variable", "Value", H:TOC) %>%
   filter(STAS %in% "B05") %>%
-  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "%<63um")))  %>%
+  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "Fine.Fraction")))  %>%
   ggplot(aes(Year, Value)) +
     geom_point() +
     geom_smooth() +
@@ -236,7 +242,7 @@ ggsave ("Figures_rapp/Soft_B05_all.png", width = 8, height = 6, dpi=500)
 df_blot_ind %>%
   gather("Variable", "Value", H:TOC) %>%
   filter(STAS %in% "B35") %>%
-  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "%<63um")))  %>%
+  mutate(Variable=factor(Variable, levels = c("No.species", "No.ind", "H", "NQI1", "TOC", "Fine.Fraction")))  %>%
   ggplot(aes(Year, Value)) +
     geom_point() +
     geom_smooth() +
@@ -248,6 +254,12 @@ ggsave ("Figures_rapp/Soft_B35_all.png", width = 8, height = 6, dpi=500)
 
 ```
 
+
+### d. Save
+```{r}
+write.csv(df_blot_ind, "Data_produced/01_df_blot_ind.csv", row.names = FALSE, quote = FALSE)
+
+```
  
 ## 5. Hard-bottom flora and fauna 
 
