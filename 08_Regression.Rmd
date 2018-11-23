@@ -12,7 +12,7 @@ output:
 
 
 Regression analysis of hydrographic and plankton variables.
-  
+
 Check out package dynlm for including lagged variables - see https://stackoverflow.com/a/13096824/1734247 
 
 ## 0. Libraries
@@ -75,27 +75,32 @@ check <-  dat %>%
   summarise_all(funs(sum(is.na(.))))
 
 complete.cases(dat)
-# there are missing values in four first years (1990-1994) and the last four years (2013-2016)
-  #River TOC starts in 1991, also P measurements from hydro missing this year
+# there are missing values for four first years (1990-1994) and the last four years (2013-2016)
+  #River TOC missing in 1990 and 1991, 
+  #P measurements from hydro missing 1990
   #Plankton group data start in 1994
   #River_Si starts in 1995
   # DIN_deep, POC_deep, PON,_deep and POP_deep is missing from 2013-2016
 
-
-
 # Suggestion: 
-  #1. We cut 1990 from the dataset (many missing variables)
-  #2. we cut variables that have more than one year missing (have them separate     below so we can test)
+  #1. We cut 1990 and 1991 from the dataset (many missing variables)
+  #2. we cut variables that have more than one year missing (have them separate below so we can test)
 
-colnames (dat)
+# NB! keep in mind that the deep POC and PON are the variables with highest upward trends in the MannKendal test. But TSM_deep is sampled over the whole time period, and has fairly high correlation with POC (0.63), also high correlations between deep and intermediate POC (0.75) and PON (0.74), same for DIN (0.72)
+plot (dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep)
+plot (dat$Hydro_TSM_Deep, dat$Hydro_PON_Deep)
+plot (dat$Hydro_POC_Deep, dat$Hydro_POC_Intermediate)
+plot (dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate)
+cor(dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep, use = "complete.obs")
+cor(dat$Hydro_PON_Deep, dat$Hydro_PON_Intermediate, use = "complete.obs")
+cor(dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate, use = "complete.obs")
 
-str(cols)
+# filter the datasets according to suggestion above
 cols <- c("Hydro_DIN_Deep", "Hydro_POC_Deep", "Hydro_PON_Deep", "Hydro_POP_Deep", "River_Si")
 
-str(dat)
 dat_sel <- dat %>% 
-  filter(Year != 1990) +
-  dplyr::select(-starts_with('Plank')) +
+  filter(Year != 1990 & Year != 1991) %>% 
+  dplyr::select(-starts_with('Plank')) %>% 
   dplyr::select(-one_of(cols))
 
 ```
@@ -103,28 +108,53 @@ dat_sel <- dat %>%
 
 # PART ONE - Hydrographic data
 
-### e. PCA of environmental variables
+## 1. PCA of environmental variables
 ```{r environmental PCA, fig.height = 10, fig.width = 10}
 #tail(dat)
 
-# cannot work with missing values, removing rows with missing
-dat.pca <- dat[complete.cases(dat), ]
+# only complete cases now, se 1f above for selection
+complete.cases(dat_sel)
+dat.pca <- dat_sel[complete.cases(dat_sel), ]
 
-dim(dat)
-dim(dat.pca) # 9 rows removed (9 years)
-unique(dat.pca$Year) # mangler noe siden 2011, bør vurdere å fjerne disse parameterne
-
-# ser på miljøvarabelrommet
+##### on all vars in dat_sel
+# ser på miljøvaribelrommet
 var.pca <- rda(dat.pca[,-1], scale = TRUE)
 envvar  <- data.frame(scores(var.pca, display = "species"))
-head(envvar)
+#head(envvar)
 years   <- data.frame(scores(var.pca, display = "sites"))
-
+# make dataset for ggplot
 pca_all <- bind_rows(envvar, years)
 pca_all$obj <- c(row.names(envvar), dat.pca$Year)
 pca_all$type <- c(rep("env", nrow(envvar)), rep("yr", nrow(years)))
+# create ggplot
+envvarplot_all <- pca_all %>% 
+  ggplot(aes(PC1, PC2)) +
+  geom_point(data = pca_all[pca_all$type=="yr", ], aes(color = as.numeric(as.character(obj)))) +
+  labs(color = "Year") +
+  geom_segment(data = pca_all[pca_all$type=="env", ], aes(x=0, xend=PC1*10, y=0, yend=PC2*10), 
+                 linetype="dashed", 
+                 arrow = arrow(length = unit(0.2, "cm"), type="closed"),
+                 size = 0.1, col = "dark gray") +
+  geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*10, y = PC2*10, label = obj),  color = "red", size = 3)
 
-envvarplot <- pca_all %>% 
+envvarplot_all
+
+##### on all hydro vars
+str (dat.pca)
+hydro.pca <- dat.pca %>% 
+  dplyr::select(starts_with("Yea"), starts_with("Hydro"))
+
+# ser på miljøvaribelrommet
+var.pca <- rda(hydro.pca[,-1], scale = TRUE)
+envvar  <- data.frame(scores(var.pca, display = "species"))
+#head(envvar)
+years   <- data.frame(scores(var.pca, display = "sites"))
+# make dataset for ggplot
+pca_all <- bind_rows(envvar, years)
+pca_all$obj <- c(row.names(envvar), hydro.pca$Year)
+pca_all$type <- c(rep("env", nrow(envvar)), rep("yr", nrow(years)))
+# create ggplot
+envvarplot_hydro <- pca_all %>% 
   ggplot(aes(PC1, PC2)) +
   geom_point(data = pca_all[pca_all$type=="yr", ], aes(color = as.numeric(as.character(obj)))) +
   labs(color = "Year") +
@@ -135,46 +165,65 @@ envvarplot <- pca_all %>%
   geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*10, y = PC2*10, label = obj),  color = "red", size = 3)
 
   
-envvarplot
+envvarplot_hydro
 
-# Guri to Helene:
-# consider removing phytoplankton by f.inst. dplyr::select(-ends_with("_med"))
-# make two PCA-ordinations: 
-# one for predictors and one for hydrographic responses
+##### on all river vars
+str (dat.pca)
+river.pca <- dat.pca %>% 
+  dplyr::select(starts_with("Yea"), starts_with("River"))
+
+# ser på miljøvaribelrommet
+var.pca <- rda(river.pca[,-1], scale = TRUE)
+envvar  <- data.frame(scores(var.pca, display = "species"))
+#head(envvar)
+years   <- data.frame(scores(var.pca, display = "sites"))
+# make dataset for ggplot
+pca_all <- bind_rows(envvar, years)
+pca_all$obj <- c(row.names(envvar), river.pca$Year)
+pca_all$type <- c(rep("env", nrow(envvar)), rep("yr", nrow(years)))
+# create ggplot
+envvarplot_river <- pca_all %>% 
+  ggplot(aes(PC1, PC2)) +
+  geom_point(data = pca_all[pca_all$type=="yr", ], aes(color = as.numeric(as.character(obj)))) +
+  labs(color = "Year") +
+  geom_segment(data = pca_all[pca_all$type=="env", ], aes(x=0, xend=PC1*2, y=0, yend=PC2*2), 
+                 linetype="dashed", 
+                 arrow = arrow(length = unit(0.2, "cm"), type="closed"),
+                 size = 0.1, col = "dark gray") +
+  geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*2, y = PC2*2, label = obj),  color = "red", size = 3)
+
+  
+envvarplot_river
 
 ```
 
-## 2. Hydrographic data, surface
+## 2. Regression analyses
 
-### a. Surface salinity
+
+
+### Linear models
 ```{r}
+### a. Surface salinity
 full_model <- lm(Salinity_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
 
 ### b. Surface Total N
-```{r}
 full_model <- lm(TotN_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
-
 
 ### c. Surface Total P
-```{r}
 full_model <- lm(TotP_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotP + River_Distant_TotP, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
 
 ### d. Surface TSM
-```{r}
 full_model <- lm(TSM_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
@@ -183,10 +232,8 @@ summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 plot(step_model)
 visreg(step_model, points = list(cex = 1))
-```
 
 ### e. Siktedyp
-```{r}
 full_model <- lm(Secchi_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN + River_Local_TotP + River_Distant_TotP + 
                  River_Local_TOC + River_Distant_TOC, data = dat)
@@ -195,39 +242,29 @@ step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
 visreg(step_model, points = list(cex = 1))
 
-```
-
 ## 3. Hydrographic data, intermediate
 
 ### a. Intermediate salinity
-```{r}
 full_model <- lm(Salinity_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
 
 ### b. Intermediate Total N
-```{r}
 full_model <- lm(TotN_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
-
 
 ### c. Intermediate Total P
-```{r}
 full_model <- lm(TotP_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotP + River_Distant_TotP, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
 
 ### d. Intermediate TSM
-```{r}
 full_model <- lm(TSM_Intermediate ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
@@ -237,31 +274,23 @@ summary(step_model)
 # plot(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
-```
-
 
 ## 4. Hydrographic data, deep
 
 ### a. Deep salinity
-```{r}
 full_model <- lm(Salinity_Deep ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
 
 ### b. Deep Total N
-```{r}
 full_model <- lm(TotN_Deep ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN, data = dat)
 # summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
-```
-
 
 ### c. Deep Total P
-```{r}
 full_model <- lm(TotP_Deep ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotP + River_Distant_TotP, data = dat)
 # summary(full_model)
@@ -270,10 +299,7 @@ summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
 
-```
-
 ### d. Deep TSM
-```{r}
 full_model <- lm(TSM_Deep ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TOC + River_Distant_TOC, data = dat)
 # summary(full_model)
@@ -296,7 +322,7 @@ summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
 
-```
+
 
 ### b. Dinoflagellater
 ```{r}
@@ -321,6 +347,8 @@ step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
+
+```
 
 ```
 
