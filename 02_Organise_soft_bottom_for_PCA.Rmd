@@ -534,12 +534,14 @@ DCAplot_3 <- ord1_both %>%
 
 DCAplot_3
 
+NEWlabels = c(B05 = "BR1", B35 = "BT44")
+
 # DCA1 til rapport
 DCA1plot <- 
   ggplot(ord1_both, aes(Year, DCA1)) +
     geom_point() +
     geom_smooth() +
-    facet_wrap(~Site)
+    facet_wrap(~Site, labeller = labeller(Site = NEWlabels))
 DCA1plot
 ggsave("Figures_rapp/DCA1_soft.png", DCA1plot, width = 8, height = 6, dpi=500)
 
@@ -568,7 +570,7 @@ NMDSplot_2
 ```
 
 ### i. Species in relation to ordination
-```{r, fig.height = 10, fig.width = 6}
+```{r, fig.height = 8, fig.width = 6}
 # boundaries
 bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.1, 0.9))
 bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
@@ -603,7 +605,7 @@ BBartOrd_05 <-
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 05 (smallest and largest 10 % av DCA-scores)",
+       caption="source: Site BR1 (smallest and largest 10 % av DCA-scores)",
        x="") +  
   coord_flip() +
   scale_y_reverse() +
@@ -622,7 +624,7 @@ BBartOrd_35 <-
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 35 (smallest and largest 10 % av DCA-scores)",
+       caption="source: Site BT44 (smallest and largest 10 % av DCA-scores)",
        x="") +  
   coord_flip() +
   theme_classic()
@@ -643,7 +645,7 @@ ggsave ("Figures_rapp/SoftFaunaDCA_35.png", BBartOrd_35, width = 6, height = 10,
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 35",
+       caption="source: Site BT44",
        x="") +  
   coord_flip() +
   theme_classic()
@@ -657,7 +659,7 @@ ggsave ("Figures_rapp/SoftFaunaDCA_35.png", BBartOrd_35, width = 6, height = 10,
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 05",
+       caption="source: Site BR1",
        x="") +  
   coord_flip() +
   theme_classic()
