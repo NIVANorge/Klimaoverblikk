@@ -62,9 +62,50 @@ dat <- left_join(dat, df_nao)
 
 ```
 
+### e. Wind data ??? Dag you mentioned you had files for Færder and Torungen?
+
+
+### f. Checking missing years in dataset
+* NB! TSM has been interpolated for 2012-2013, we decided not to interpolate the _Deep nutrients, because tehse are at the end of the time series
+```{r}
+
+str(dat)
+
+check <-  dat %>%
+  summarise_all(funs(sum(is.na(.))))
+
+complete.cases(dat)
+# there are missing values in four first years (1990-1994) and the last four years (2013-2016)
+  #River TOC starts in 1991, also P measurements from hydro missing this year
+  #Plankton group data start in 1994
+  #River_Si starts in 1995
+  # DIN_deep, POC_deep, PON,_deep and POP_deep is missing from 2013-2016
+
+
+
+# Suggestion: 
+  #1. We cut 1990 from the dataset (many missing variables)
+  #2. we cut variables that have more than one year missing (have them separate     below so we can test)
+
+colnames (dat)
+
+str(cols)
+cols <- c("Hydro_DIN_Deep", "Hydro_POC_Deep", "Hydro_PON_Deep", "Hydro_POP_Deep", "River_Si")
+
+str(dat)
+dat_sel <- dat %>% 
+  filter(Year != 1990) +
+  dplyr::select(-starts_with('Plank')) +
+  dplyr::select(-one_of(cols))
+
+```
+
+
+# PART ONE - Hydrographic data
+
 ### e. PCA of environmental variables
 ```{r environmental PCA, fig.height = 10, fig.width = 10}
-tail(dat)
+#tail(dat)
 
 # cannot work with missing values, removing rows with missing
 dat.pca <- dat[complete.cases(dat), ]
@@ -72,9 +113,6 @@ dat.pca <- dat[complete.cases(dat), ]
 dim(dat)
 dim(dat.pca) # 9 rows removed (9 years)
 unique(dat.pca$Year) # mangler noe siden 2011, bør vurdere å fjerne disse parameterne
-
-dat %>%
-  summarise_all(funs(sum(is.na(.))))
 
 # ser på miljøvarabelrommet
 var.pca <- rda(dat.pca[,-1], scale = TRUE)
