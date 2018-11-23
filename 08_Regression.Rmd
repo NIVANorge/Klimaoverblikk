@@ -29,7 +29,7 @@ library(lme4) # for mixed effect models
 library(standardize) # standardize data for modelling
 #install.packages("afex")
 library(afex) # adding p-values to lmer output
-
+library(sjPlot) # effectplots lmer
 # library(pander)
 ```
 
@@ -138,8 +138,7 @@ envvarplot_all <- pca_all %>%
   geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*10, y = PC2*10, label = obj),  color = "red", size = 3)
 
 envvarplot_all
-
-ggsave ("Figures_rapp/Ordination_hydro_rivers.png", width = 7, height = 9, dpi=500)
+ggsave ("Figures_rapp/Ordination_hydro_rivers.png", width = 8, height = 8, dpi=500)
 
 ##### on all hydro vars
 str (dat.pca)
@@ -168,8 +167,7 @@ envvarplot_hydro <- pca_all %>%
 
   
 envvarplot_hydro
-
-ggsave ("Figures_rapp/Ordination_hydro.png", width = 7, height = 9, dpi=500)
+ggsave ("Figures_rapp/Ordination_hydro.png", width = 8, height = 8, dpi=500)
 
 ##### on all river vars
 str (dat.pca)
@@ -190,16 +188,15 @@ envvarplot_river <- pca_all %>%
   ggplot(aes(PC1, PC2)) +
   geom_point(data = pca_all[pca_all$type=="yr", ], aes(color = as.numeric(as.character(obj)))) +
   labs(color = "Year") +
-  geom_segment(data = pca_all[pca_all$type=="env", ], aes(x=0, xend=PC1*2, y=0, yend=PC2*2), 
+  geom_segment(data = pca_all[pca_all$type=="env", ], aes(x=0, xend=PC1*3, y=0, yend=PC2*3), 
                  linetype="dashed", 
                  arrow = arrow(length = unit(0.2, "cm"), type="closed"),
                  size = 0.1, col = "dark gray") +
-  geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*2, y = PC2*2, label = obj),  color = "red", size = 3)
+  geom_text(data = pca_all[pca_all$type=="env", ], aes(x = PC1*3, y = PC2*3, label = obj),  color = "red", size = 3)
 
   
 envvarplot_river
-
-ggsave ("Figures_rapp/Ordination_rivers.png", width = 7, height = 9, dpi=500)
+ggsave ("Figures_rapp/Ordination_rivers.png", width = 8, height = 8, dpi=500)
 
 
 
@@ -406,8 +403,6 @@ visreg(step_model, points = list(cex = 1))
 
 ```
 
-```
-
 
 # PART TWO - Biologigal data
 
@@ -427,7 +422,7 @@ We're trying to find meaningful ways to describe the relationship between biolog
 ## Hard bottom
 ### Environmental variables in relation to ordination
 ```{r fitting environmental variables to ordination}
-dim(dat)
+dim(dat_sel)
 
 # retrieving HB parameters
 HBdf <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
@@ -437,14 +432,14 @@ names(HBdf)
 HBdat <- # joining and removing phyto from the nix
   HBdf %>% 
     filter(Site %in% c(407, 410)) %>% # filter on stations 407 and 410
-    left_join(dat, by = "Year") %>% # join
-    dplyr::select(-ends_with("_med")) # remove phytopl
+    left_join(dat_sel, by = "Year") %>% # join
+    dplyr::select(-starts_with("Plankton_")) # remove phytopl
 
 DCAhb <- HBdat %>% 
   dplyr::select(DCA1:DCA4)
 
 envHB <- HBdat %>% 
-  dplyr::select(Chla_Deep:Winter_NAO)
+  dplyr::select(Hydro_Chla_Surface:Winter_NAO)
 
 envfitHB <- envfit(DCAhb, envHB, na.rm = TRUE, permutations = 999, choices = 1:4)
 envfitHB # gives an indication of which parameters may be important for community responses along dca 1, 12 obs fjernes pga NA
@@ -454,7 +449,11 @@ plot(DCAhb[1:2])
 plot(envfitHB, p.max = 0.01, add = TRUE) # plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
 
 HBpar <- names(which(envfitHB$vectors$pvals < 0.01)) # names of parameters with p-value < 0.01
-# Must remove phytoplankton
+
+# check selection for missing values
+HBdat %>%
+  summarise_all(funs(sum(is.na(.))))
+
 ```
 
 ### DCA - possible causal links
@@ -474,12 +473,32 @@ HBlmer <- lmer(sHB$formula, sHB$data)
 # Model selection
 # https://cran.r-project.org/web/packages/lmerTest/lmerTest.pdf 
 
-HBlmer_select <- lmerTest::step(HBlmer) # check envvar for missing values
-HBlmer_select
+HBlmer_select <- lmerTest::step(HBlmer)
+str(HBlmer_select)
 
-# a bit worried about autocorrelation over time... not sure how much of an issue it is with this kind of data... Dag?
+HBlmer_best <- get_model(HBlmer_select)
 
+plot(HBlmer_best)
+
+# a bit worried about this approach... Dag?
+
+# Visualisation
+# https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_model_estimates.html
+# https://cran.r-project.org/web/packages/sjPlot/vignettes/plot_marginal_effects.html
+
+# Modellplot
+plot_model(HBlmer_best, type = "diag")
+plot_model(HBlmer_best, sort.est = TRUE)
+ggsave ("Figures_rapp/ForestEffect_HBmodDCA.png", width = 6, height = 4, dpi=500)
+# effektplot kommer i neste bolk
+# kanksje må vi vurdere interaksjoner?
 ```
+
+```{r effect plot, fig.height = 10}
+plot_model(HBlmer_best, type = "slope", show.data = TRUE)
+ggsave ("Figures_rapp/ForestEffect_HBmodDCA.png", width = 10, height = 10, dpi=500)
+```
+
 
 ## Soft bottom
 ### Environmental variables in relation to ordination
