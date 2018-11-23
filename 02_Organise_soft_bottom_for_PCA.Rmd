@@ -397,6 +397,12 @@ head(SiteSpec)
 # må erstatte NA med 0
 SiteSpec[is.na(SiteSpec)] = 0
 
+# gjør det på gamlemåten siden jeg er usikker på hvordan det gjøres i dplyr
+ant.reg  <- colSums(SiteSpec != 0) 
+filter = names(which(ant.reg < 13))
+SiteSpec <- SiteSpec[ ,-which(names(SiteSpec) %in% filter)] 
+dim(SiteSpec)
+
 # lager separate artsmatriser for de to ulike stasjonene (representerer ulike system)
 spec_05 <- filter (SiteSpec, Site == "B05")
 spec_35 <- filter (SiteSpec, Site == "B35")
@@ -564,16 +570,17 @@ NMDSplot_2
 ### i. Species in relation to ordination
 ```{r, fig.height = 10, fig.width = 6}
 # boundaries
-bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.05, 0.95))
-bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.05, 0.95))
+bound_05 <- quantile(ord1_05.species$DCA1, probs = c(0.1, 0.9))
+bound_35 <- quantile(ord1_35.species$DCA1, probs = c(0.1, 0.9))
 
 # subset on boundaries
 bound_05.sub <- ord1_05.species[ord1_05.species$DCA1 <= bound_05[[1]] |ord1_05.species$DCA1 >= bound_05[[2]], ]
 bound_35.sub <- ord1_35.species[ord1_35.species$DCA1 <= bound_35[[1]] |ord1_35.species$DCA1 >= bound_35[[2]], ]
 
-# subset on boundaries for site scores (subjective)
-ord.year_35 <- ord1_35.species[ord1_35.species$DCA1 >= -0.6 & ord1_35.species$DCA1 <= -0.25 |ord1_35.species$DCA1 >= 0.3 & ord1_35.species$DCA1 <= 1.5, ]
-ord.year_05 <- ord1_05.species[ord1_05.species$DCA1 >= -0.8 & ord1_05.species$DCA1 <= -0.25 |ord1_05.species$DCA1 >= 0.25 & ord1_05.species$DCA1 <= 0.7, ]
+# subset on boundaries for site scores (subjective) - må justeres
+#ord.year_05 <- ord1_05.species[ord1_05.species$DCA1 >= -0.8 & ord1_05.species$DCA1 <= -0.25 |ord1_05.species$DCA1 >= 0.25 & ord1_05.species$DCA1 <= 0.7, ]
+#ord.year_35 <- ord1_35.species[ord1_35.species$DCA1 >= -0.6 & ord1_35.species$DCA1 <= -0.25 |ord1_35.species$DCA1 >= 0.3 & ord1_35.species$DCA1 <= 1.5, ]
+
 
 write.csv2(bound_05.sub, file = "Data_produced/BBord1_05_sub.csv")
 write.csv2(bound_35.sub, file = "Data_produced/BBord1_35_sub.csv")
@@ -596,7 +603,7 @@ BBartOrd_05 <-
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 05 (smallest and largest 5 % av DCA-scores)",
+       caption="source: Site 05 (smallest and largest 10 % av DCA-scores)",
        x="") +  
   coord_flip() +
   scale_y_reverse() +
@@ -615,7 +622,7 @@ BBartOrd_35 <-
                linetype="dashed", 
                size=0.1) +   # Draw dashed lines
   labs(title="Soft bottom fauna vs DCA1", 
-       caption="source: Site 35 (smallest and largest 5 % av DCA-scores)",
+       caption="source: Site 35 (smallest and largest 10 % av DCA-scores)",
        x="") +  
   coord_flip() +
   theme_classic()
