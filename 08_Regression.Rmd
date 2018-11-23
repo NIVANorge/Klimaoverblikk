@@ -139,6 +139,8 @@ envvarplot_all <- pca_all %>%
 
 envvarplot_all
 
+ggsave ("Figures_rapp/Ordination_hydro_rivers.png", width = 7, height = 9, dpi=500)
+
 ##### on all hydro vars
 str (dat.pca)
 hydro.pca <- dat.pca %>% 
@@ -166,6 +168,8 @@ envvarplot_hydro <- pca_all %>%
 
   
 envvarplot_hydro
+
+ggsave ("Figures_rapp/Ordination_hydro.png", width = 7, height = 9, dpi=500)
 
 ##### on all river vars
 str (dat.pca)
@@ -195,11 +199,67 @@ envvarplot_river <- pca_all %>%
   
 envvarplot_river
 
+ggsave ("Figures_rapp/Ordination_rivers.png", width = 7, height = 9, dpi=500)
+
+
+
 ```
 
 ## 2. Regression analyses
 
+### Testing assumptions
+```{r}
 
+str (dat_sel)
+
+# linear relationship between variables?
+scatter.smooth(x=dat_sel$River_TOC, y=dat_sel$Hydro_TSM_Deep, main="TSM ~ River TOC")
+
+# normal distribution?
+hist (dat_sel$Hydro_TSM_Deep)
+hist (dat_sel$Hydro_POC_Surface)
+hist (dat_sel$Hydro_POC_Intermediate)
+hist (dat_sel$Hydro_Temperature_Deep)
+
+## Have a look at the densities
+plot(density(dat_sel$Hydro_TSM_Deep));plot(density (dat_sel$River_TOC))
+## Perform the test
+shapiro.test(dat_sel$Hydro_TSM_Deep); shapiro.test(dat_sel$River_TOC)
+## Plot using a qqplot
+qqnorm(dat_sel$Hydro_TSM_Deep);qqline(dat_sel$Hydro_TSM_Deep, col = 2)
+qqnorm(dat_sel$River_TOC);qqline(dat_sel$River_TOC, col = 2)
+
+# appear to be heteroscedadastic, SD increase with mean
+# Toms suggested solution to this was Glm with gamma distribution....
+
+```
+
+### GLM models
+```{r}
+str(dat_sel)
+
+# Winter_NAO River__TOC
+
+# the minimum model only includes River_TOC...
+full_model <- glm(Hydro_TSM_Deep ~ River_TOC + River_SPM + Winter_NAO + Hydro_DIN_Intermediate + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+# relevant to add wind here
+# River discharge more explanatory power than NAO??? just that they change in same direction??
+full_model <- glm(Hydro_Temperature_Deep ~ Winter_NAO + River_Discharge, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model)
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+```
 
 ### Linear models
 ```{r}
@@ -325,7 +385,6 @@ visreg(step_model, points = list(cex = 1))
 
 
 ### b. Dinoflagellater
-```{r}
 full_model <- lm(Dinoflagellater_med ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN + River_Local_TotP + River_Distant_TotP + 
                  River_Local_TOC + River_Distant_TOC, data = dat)
@@ -335,10 +394,7 @@ summary(step_model)
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 visreg(step_model, points = list(cex = 1))
 
-```
-
 ### c. Flagellater
-```{r}
 full_model <- lm(Dinoflagellater_med ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN + River_Local_TotP + River_Distant_TotP + 
                  River_Local_TOC + River_Distant_TOC, data = dat)
