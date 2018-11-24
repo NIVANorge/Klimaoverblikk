@@ -66,7 +66,7 @@ dat <- left_join(dat, df_nao)
 
 
 ### f. Checking missing years in dataset
-* NB! TSM has been interpolated for 2012-2013, we decided not to interpolate the _Deep nutrients, because tehse are at the end of the time series
+* NB! TSM has been interpolated for 2012-2013, we decided not to interpolate the _Deep nutrients and POM, because these are at the end of the time series
 ```{r}
 
 str(dat)
@@ -170,7 +170,7 @@ envvarplot_hydro
 ggsave ("Figures_rapp/Ordination_hydro.png", width = 8, height = 8, dpi=500)
 
 ##### on all river vars
-str (dat.pca)
+#str (dat.pca)
 river.pca <- dat.pca %>% 
   dplyr::select(starts_with("Yea"), starts_with("River"))
 

@@ -11,7 +11,7 @@ output:
 ---
 
 Overview:   
-* Produces summarized data by year (ending in '_a') and quarter (ending in '_q') 
+* Produces summarized data by year (ending in '_a') and quarter (ending in '_q'), ex df_rivers_summ_a
 * Reads data from delivered data files (rivers, hydrology)  
 * Data produced are written to Data_produced (starting with '05_') for later use   
 * HFR: Annual time seies plots for report (Kap 3.1) are produced here, except plots of soft-bottom (pkt 4c) and hard-bottom (pkt 5) variables which are in script 01_ , 
