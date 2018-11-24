@@ -681,6 +681,8 @@ bloom_01_median <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANo
 # Bloom_02: phytoplankton data extrated during max Chla (at 5m) during Feb to Apr
 bloom_02 <-read.csv(text=getURL("https://raw.githubusercontent.com/NIVANorge/Klimaoverblikk/master/Data_produced/df_plank_bloom02.csv"), header=T)
 
+# bloom_02 <- read.csv2("Data_produced/df_plank_bloom02.csv", sep = ",")
+
 ```
 
 ### c. Reshape for ordination  
@@ -708,7 +710,7 @@ spec.m_phyto_01[is.na(spec.m_phyto_01)] = 0
 
 # Innledende DCA - litt usikker på utfallet 
 ord_phyto01 <- decorana(spec.m_phyto_01)
-ord_phyto02 <- decorana(spec.m_phyto_02)
+ord_phyto02 <- decorana(spec.m_phyto_02, iweigh = 1)
 
 # Innledende NMDS - litt usikker på utfallet 
 nmds_phyto01 <- metaMDS(spec.m_phyto_01)
