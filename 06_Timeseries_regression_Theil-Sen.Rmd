@@ -89,13 +89,13 @@ df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
 ```{r}
 
 # df1 = rivers
-#str(df_rivers_summ_a)
+str(df_rivers_summ_a)
 df1 <- df_rivers_summ_a %>%
   mutate(Discharge = Discharge/1E3) %>%
   gather("Variable", "Value", TotN:Si) %>%
   mutate(Variable = paste0("River", "_", Variable)) %>%
   mutate(Value = Value/1E3) %>%
-  select(Variable, Year, Value)
+  dplyr::select(Variable, Year, Value)
 
 # HFR: removed these lines because only use distant river group
   #mutate(River_type = paste0("River_", River_type),
@@ -119,15 +119,16 @@ df1 <- df_rivers_summ_a %>%
 df2 <- df_hydro_summ_a %>%
   gather("Variable", "Value", Temperature, Salinity, O2, PO4, Si, Chla:DIN) %>%
   mutate(Variable = paste0("Hydro", "_", Variable, "_", Depth)) %>%
-  filter(!(Variable %in% c("Secchi_Intermediate", "Secchi_Deep"))) %>%
-  select(Variable, Year, Value)
+  filter(!(Variable %in% c("Hydro_Secchi_Intermediate", "Hydro_Secchi_Deep"))) %>%
+  droplevels() %>%
+  dplyr::select(Variable, Year, Value)
 
 # df3a= plankton groups
 #str (df_plank_summ_a)
 df3a <- df_plank_summ_a %>%
   gather("Variable", "Value", Diatoms:Flagellates) %>%
   mutate(Variable = paste0("Plankton", "_", Variable)) %>%
-  select(Variable, Year,Value)
+  dplyr::select(Variable, Year,Value)
 
 #ON HOLD: ordinations and indices
 # # df3b= plankton DCA1
