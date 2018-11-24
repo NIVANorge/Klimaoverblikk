@@ -621,6 +621,7 @@ plot(envfitP02, p.max = 0.05, add = TRUE)
 # for plankton it looks like we might need to something about the ordination
 
 P02par <- names(which(envfitP02$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+P02_allpar <- names(envP02)
 
 ```
 
@@ -630,7 +631,7 @@ P02par <- names(which(envfitP02$vectors$pvals < 0.05)) # names of parameters wit
 # Standarizing
 # https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html 
 
-P02_fullformula <- as.formula(paste("DCA1 ~ ", paste(P02par, collapse = " + "), sep = ""))
+P02_fullformula <- as.formula(paste("DCA1 ~ ", paste(P02_allpar, collapse = " + "), sep = ""))
 
 sP02 <- standardize(P02_fullformula, P02_dat)
 
@@ -641,5 +642,7 @@ P02_select
 
 summary(P02_select)
 summary(P02_lm) # ingen signifikante sammenhenger
+
+# tror vi må starte modellseleksjon fra bunnen av på hele parametersettet. tviler kanskje litt på om vi får noe ut av det, men er vel verdt et forsøk? Dag?
 
 ```
