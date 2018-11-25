@@ -17,20 +17,11 @@ Check out package dynlm for including lagged variables - see https://stackoverfl
 
 ## 0. Libraries
 ```{r}
-#install.packages("tidyverse")
-#install.packages("dplyr")
-#install.packages("bindrcpp")
-#install.packages("tidyselect")
-#install.packages("glue")
-#install.packages("yaml")
-install.packages("purrr")
+
 library(tidyverse)
-install.packages("readxl")
 library(readxl)
 library(MASS)
-install.packages("ggplot")
 library (ggplot2)
-#install.packages("visreg")
 library(visreg)
 library(vegan)
 library(lme4) # for mixed effect models
@@ -38,14 +29,14 @@ library(lme4) # for mixed effect models
 library(standardize) # standardize data for modelling
 #install.packages("afex")
 library(afex) # adding p-values to lmer output
-#install.packages("sjPlot") # NB! denne krever relativt oppdatert versjon av R
+install.packages("sjPlot") # NB! denne krever relativt oppdatert versjon av R
 library(sjPlot) # effectplots lmer
 # library(pander)
+#install.packages("glmulti",  lib = "H:/Documents/R/win-library/3.4")
+#library(glmulti, lib.loc="H:/Documents/R/win-library/3.4")
+#install.packages("rJava",  lib = "H:/Documents/R/win-library/3.4")
+#library(rJava, lib.loc="H:/Documents/R/win-library/3.4")
 
-# oppdatere R gjennom Rstudio
-#install.packages("installr")
-#library(installr)
-#updateR()
 
 ```
 
@@ -107,9 +98,9 @@ plot (dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep)
 plot (dat$Hydro_TSM_Deep, dat$Hydro_PON_Deep)
 plot (dat$Hydro_POC_Deep, dat$Hydro_POC_Intermediate)
 plot (dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate)
-cor(dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep, use = "complete.obs")
-cor(dat$Hydro_PON_Deep, dat$Hydro_PON_Intermediate, use = "complete.obs")
-cor(dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate, use = "complete.obs")
+#cor(dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep, use = "complete.obs")
+#cor(dat$Hydro_PON_Deep, dat$Hydro_PON_Intermediate, use = "complete.obs")
+#cor(dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate, use = "complete.obs")
 
 # filter the datasets according to suggestion above
 cols <- c("Hydro_DIN_Deep", "Hydro_POC_Deep", "Hydro_PON_Deep", "Hydro_POP_Deep", "River_Si")
@@ -259,7 +250,6 @@ qqnorm(dat_sel$River_TOC);qqline(dat_sel$River_TOC, col = 2)
 ```
 
 ### GLM models - subjective predictor choice
-* NB! har ikke fått kjørt gjennom disse enda på grunn av alt pakkekrøllet...
 ```{r}
 str(dat_sel)
 
@@ -267,7 +257,7 @@ str(dat_sel)
 
 ### 1a. Surface salinity
 full_model <- glm(Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
+#summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model) # only River_TOC...
 par(mfrow = c(2,2), mar = c(4,5,2,1))
@@ -275,54 +265,8 @@ plot(step_model)
 visreg(step_model, points = list(cex = 1))
 
 ### 1b. Deep salinity
-full_model <- glm(Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 2a. Surface TSM 
-full_model <- glm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface, Hydro_DIN_Surface, Hydro_PO4_Surface, Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 2b. deep TSM
-full_model <- glm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep, Hydro_DIN_Surface, Hydro_PO4_Surface, Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 3a. Surface POC 
-full_model <- glm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface, Hydro_DIN_Surface, Hydro_PO4_Surface, Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 3b.Intermediate POC
-full_model <- glm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate, Hydro_DIN_Intermediate, Hydro_PO4_Intermediate, Hydro_TotP_Intermediate + Hydro_TotP_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# surface Chla 
-full_model <- glm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
+full_model <- glm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel, family = Gamma(link = "identity"))
+#summary(full_model)
 step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
 summary(step_model) # only River_TOC...
 par(mfrow = c(2,2), mar = c(4,5,2,1))
@@ -339,33 +283,81 @@ par(mfrow = c(2,2), mar = c(4,5,2,1))
 plot(step_model)
 visreg(step_model, points = list(cex = 1))
 
+# 2a. Surface TSM 
+full_model <- glm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model) # River TOC and salinity surface higest significance
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+visreg(step_model, "River_TOC")
+
+# 2b. deep TSM
+full_model <- glm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotP_Surface + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model) # highest TSM_Surface
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+# 3a. Surface POC 
+full_model <- glm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model) # River TOC and salinity surface higest significance, also river_SPM
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+# 3b.Intermediate POC
+full_model <- glm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotP_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model) # only River_TOC...
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+# surface Chla 
+full_model <- glm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+summary(full_model)
+step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+summary(step_model) # highest POC_surface, also river_TOC
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(step_model)
+visreg(step_model, points = list(cex = 1))
+
+
 
 
 
 ```
 
 ### GLM models - Automated predictor selection - NOT TESTED YET!
-* heller ikke fått testet dette
 ```{r}
 str(dat_sel)
+
+names (dat_sel)
 
 # examples from here:
 # https://rstudio-pubs-static.s3.amazonaws.com/2897_9220b21cfc0c43a396ff9abf122bb351.html
 
-library(glmulti)
 
-glmulti.logistic.out <-
-    glmulti(low ~ age + lwt + race.cat + smoke + preterm + ht + ui + ftv.cat, data = lbw,
+
+glmulti.POC <-
+    glmulti(Hydro_POC_Surface ~ age + lwt + race.cat + smoke + preterm + ht + ui + ftv.cat, data = lbw,
             level = 1,               # No interaction considered
             method = "h",            # Exhaustive approach
             crit = "aic",            # AIC as criteria
-            confsetsize = 5,         # Keep 5 best models
+            confsetsize = 3,         # Keep 5 best models
             plotty = F, report = F,  # No plot or interim reports
             fitfunction = "glm",     # glm function
-            family = binomial)       # binomial family for logistic regression
+            family = gamma)       # gamma family
 
 ## Show result for the best model
-summary(glmulti.logistic.out@objects[[1]])
+summary(glmulti.POC@objects[[1]])
 
 #check also: library(bestglm)
 ```
