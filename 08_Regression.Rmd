@@ -37,7 +37,10 @@ library(sjPlot) # effectplots lmer
 #install.packages("glmulti")
 library(glmulti)
 #install.packages("rJava") # NB! I needed to installe Java for Windows x64 here: https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
-library(rJava)
+
+install.packages("MuMIn") 
+library(MuMIn)
+#library(rJava)
 ```
 
 ## 1. Data  
@@ -244,7 +247,10 @@ shapiro.test(dat_sel$Hydro_TSM_Deep); shapiro.test(dat_sel$River_TOC)
 ## Plot using a qqplot
 qqnorm(dat_sel$Hydro_TSM_Deep);qqline(dat_sel$Hydro_TSM_Deep, col = 2)
 qqnorm(dat_sel$River_TOC);qqline(dat_sel$River_TOC, col = 2)
+qqnorm(dat_sel$Hydro_POC_Surface);qqline(dat_sel$Hydro_POC_Surface, col = 2)
 
+mod <- lm (Hydro_POC_Surface ~ 1, data = dat_sel)
+plot(mod)
 # many appear to be heteroscedadastic, SD increase with mean
 # As I mentioned before, Toms suggested solution to this was Glm with gamma distribution.... any other suggestions?
 
@@ -371,21 +377,37 @@ par(mfrow = c(2,2), mar = c(4,5,2,1))
 plot(step_model)
 visreg(step_model, points = list(cex = 1))
 
-
-
-
-
 ```
 
 
 ### Linear models
 ```{r}
 ### a. Surface salinity
-full_model <- lm(Salinity_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
-# summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model)
+full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel) 
 
+summary(full_model)
+#step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
+
+library (MASS)
+?dredge
+options (na.action= "na.fail") 
+min_model <- dredge (full_model, rank = "BIC") 
+
+                     
+summary (get.models(min_model, 1)[[1]])
+
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+?plot_model
+plot(get.models(min_model, 1)[[1]])
+
+```
+
+
+```{r}
 ### b. Surface Total N
 full_model <- lm(TotN_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN, data = dat)
