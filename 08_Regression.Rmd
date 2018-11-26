@@ -252,13 +252,13 @@ qqnorm(dat_sel$Hydro_POC_Surface);qqline(dat_sel$Hydro_POC_Surface, col = 2)
 ```
 
 
-### Linear models - slected responses
+### Linear models - selected responses using BIC
 ```{r}
 #options (na.action= "na.fail") 
-#?dredge
+?dredge
 
 ### 1a POC Surface
-full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel) 
+full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
@@ -271,6 +271,10 @@ plot_model(get.models(min_model, 1)[[1]], type = "diag")
 plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+tab_model (get.models(min_model, 1)[[1]])
+# , file = "Figures_rapp/Regressions_POC_Surf_table.html"
+ggsave ("Figures_rapp/Regressions_POC_Surf.png", width = 8, height = 6, dpi=500)
 
 ### 1b POC Intermediate
 full_model <- lm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotN_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel) 
@@ -287,8 +291,12 @@ plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
 
+ggsave ("Figures_rapp/Regressions_POC_Intermed.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
 ### 2a TSM Surface
-full_model <- lm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel) 
+full_model <- lm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
@@ -301,6 +309,10 @@ plot_model(get.models(min_model, 1)[[1]], type = "diag")
 plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_TSM_Surf.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
 
 ### 2a TSM Deep
 full_model <- lm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotP_Surface + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel) 
@@ -317,6 +329,12 @@ plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
 
+ggsave ("Figures_rapp/Regressions_TSM_Deep.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+
+
 ### 1a Salinity Surface
 full_model <- lm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel) 
 summary(full_model)
@@ -331,6 +349,10 @@ plot_model(get.models(min_model, 1)[[1]], type = "diag")
 plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_Salinity_Surface.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
 
 ### 1a Salinity Deep
 full_model <- lm(Hydro_Salinity_Deep ~ River_Discharge + Winter_NAO, data = dat_sel) 
@@ -347,15 +369,24 @@ plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
 #effektplot
 plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
 
+tab_model (get.models(min_model, 1)[[1]])
 
 ### Chla Surface
-full_model <- glm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
+full_model <- lm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Secchi_Surface, data = dat_sel) 
 summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # highest POC_surface, also river_TOC
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+tab_model (get.models(min_model, 1)[[1]])
 
 # relevant to add wind here
 # River discharge more explanatory power than NAO??? just that they change in same direction??
@@ -368,7 +399,7 @@ plot(step_model)
 visreg(step_model, points = list(cex = 1))
 
 ```
-### Linear models - OLD
+### Linear models - OLD using step AIC
 ```{r}
 ### b. Surface Total N
 full_model <- lm(TotN_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
@@ -515,8 +546,6 @@ plot_model(POC_bic@objects[[1]], type = "slope", show.data = TRUE)
 
 #ggsave ("Figures_rapp/.png", width = 10, height = 10, dpi=500)
 
-########################## NB! models below are using stepAIC, which is probably not good for glms?
-?stepAIC # Details: There is a potential problem in using glm fits with a variable scale, as in that case the deviance is not simply related to the maximized log-likelihood. The glm method for extractAIC makes the appropriate adjustment for a gaussian family, but may need to be amended for other cases. (The binomial and poisson families have fixed scale by default and do not correspond to a particular maximum-likelihood problem for variable scale.)
 
 
 
