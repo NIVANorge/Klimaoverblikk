@@ -79,6 +79,10 @@ library(sjPlot) # effectplots lmer
 ## Please re-install 'TMB' from source using install.packages('TMB', type = 'source') or ask CRAN for a binary version of 'TMB' matching CRAN's 'Matrix' package
 ```
 
+```
+## Learn more about sjPlot with 'browseVignettes("sjPlot")'.
+```
+
 ```r
 # library(pander)
 #install.packages("glmulti")
@@ -870,7 +874,7 @@ tab_model (model_flag01)
 </table>
 ![](10_Regression_plankton_files/figure-html/unnamed-chunk-11-3.png)<!-- -->
 
-## d. Excluding Hydro_Chla_Surface + Hydro_Secchi_Surface
+### Excluding Hydro_Chla_Surface + Hydro_Secchi_Surface
 
 ```r
 # 1b
@@ -1000,7 +1004,7 @@ tab_model (model_flag02)
 ![](10_Regression_plankton_files/figure-html/unnamed-chunk-12-3.png)<!-- -->
 
 
-## e. Plankton including year effect (effectively like detrending data)
+## d. Plankton including year effect (effectively like detrending data)
 
 ```r
 #
@@ -1179,4 +1183,82 @@ get.models(min_model, 1)[[1]] %>% summary()
 ## Multiple R-squared:  0.2422,	Adjusted R-squared:  0.2061 
 ## F-statistic:  6.71 on 1 and 21 DF,  p-value: 0.01707
 ```
+
+## e. Interpretation of dinoflagellate model
+### I. Plot
+
+```r
+lev <- c("Hydro_DIN_Surface", "Hydro_Secchi_Surface", "Hydro_Temperature_Surface", 
+           "Hydro_TotP_Surface", "River_SPM", "River_TOC", "Plankton_Dinoflagellates")
+dat_sel2 %>% 
+  dplyr::select(Year, Hydro_DIN_Surface, Hydro_Secchi_Surface, Hydro_Temperature_Surface, 
+         Hydro_TotP_Surface, River_SPM, River_TOC, Plankton_Dinoflagellates) %>%
+  gather(Variable, Value, -Year) %>%
+  mutate(Variable = factor(Variable, levels = lev)) %>%
+  ggplot(aes(Year, Value)) + geom_smooth() + geom_point() +
+  facet_wrap(~Variable, scales = "free_y")
+```
+
+```
+## `geom_smooth()` using method = 'loess'
+```
+
+![](10_Regression_plankton_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+### II. Effect of each variable on slope of dinoflagellates vs. year   
+Set one variable to mean value, and print  1 - (new slope)/ (original slope) 
+
+```r
+dat_pred <- list(
+  dat_sel2 %>% mutate(Hydro_DIN_Surface = mean(Hydro_DIN_Surface)),
+  dat_sel2 %>% mutate(Hydro_Secchi_Surface = mean(Hydro_Secchi_Surface)),
+  dat_sel2 %>% mutate(Hydro_Temperature_Surface = mean(Hydro_Temperature_Surface)),
+  dat_sel2 %>% mutate(Hydro_TotP_Surface = mean(Hydro_TotP_Surface)),
+  dat_sel2 %>% mutate(River_SPM = mean(River_SPM)),
+  dat_sel2 %>% mutate(River_TOC = mean(River_TOC))
+)
+
+vars <- c("Hydro_DIN_Surface", "Hydro_Secchi_Surface", "Hydro_Temperature_Surface", 
+          "Hydro_TotP_Surface", "River_SPM", "River_TOC")
+
+cat("Fraction of dinoflagellate decline caused by said variable:\n")
+```
+
+```
+## Fraction of dinoflagellate decline caused by said variable:
+```
+
+```r
+for (i in 1:6){
+  yr <- 1994:2016
+  pred_orig <- predict(model_dinoflag01)
+  pred_man <- predict(model_dinoflag01, new = dat_pred[[i]])
+  #plot(yr, pred_orig)
+  #points(yr, pred_man, pch = 19, col = 2)
+  slope_orig <- coef(lm(pred_orig ~ yr))[2]
+  slope_man <- coef(lm(pred_man ~ yr))[2]
+  cat(vars[i], ":", 1 - slope_man/slope_orig, "\n")
+}
+```
+
+```
+## Hydro_DIN_Surface : 0.3225883 
+## Hydro_Secchi_Surface : 0.4474765 
+## Hydro_Temperature_Surface : 0.2130306 
+## Hydro_TotP_Surface : -0.02379244 
+## River_SPM : 0.3530978 
+## River_TOC : -0.3124008
+```
+
+```r
+i <- 4
+  yr <- 1994:2016
+  pred_orig <- predict(model_dinoflag01)
+  pred_man <- predict(model_dinoflag01, new = dat_pred[[i]])
+  plot(yr, pred_orig, type = "b")
+  points(yr, pred_man, pch = 19, col = 2, type = "b")
+  points(yr, dat_sel2$Plankton_Dinoflagellates, pch = 19, col = 4)
+```
+
+![](10_Regression_plankton_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
