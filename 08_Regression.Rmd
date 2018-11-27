@@ -570,7 +570,7 @@ We're trying to find meaningful ways to describe the relationship between biolog
 ## Hard bottom
 ### Environmental variables in relation to ordination
 ```{r fitting environmental variables to ordination}
-dim(dat_sel)
+dim(dat_sel_mod)
 
 # retrieving HB parameters
 HBdf <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
@@ -580,23 +580,24 @@ names(HBdf)
 HBdat <- # joining and removing phyto from the nix
   HBdf %>% 
     filter(Site %in% c(407, 410)) %>% # filter on stations 407 and 410
-    left_join(dat_sel, by = "Year") %>% # join
+    left_join(dat_sel_mod, by = "Year") %>% # join
     dplyr::select(-starts_with("Plankton_")) # remove phytopl
 
 DCAhb <- HBdat %>% 
   dplyr::select(DCA1:DCA4)
 
 envHB <- HBdat %>% 
-  dplyr::select(Hydro_Chla_Surface:Winter_NAO)
+  dplyr::select(Hydro_Chla_Deep:Winter_NAO)
 
-envfitHB <- envfit(DCAhb, envHB, na.rm = TRUE, permutations = 999, choices = 1:4)
+envfitHB <- envfit(DCAhb, envHB, na.rm = TRUE, permutations = 999, choices = 1)
 envfitHB # gives an indication of which parameters may be important for community responses along dca 1, 12 obs fjernes pga NA
 str(envfitHB)
 
-plot(DCAhb[1:2])
-plot(envfitHB, p.max = 0.01, add = TRUE) # plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
+#plot(DCAhb[1:2])
+#plot(envfitHB, p.max = 0.05, add = TRUE) # plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
 
-HBpar <- names(which(envfitHB$vectors$pvals < 0.01)) # names of parameters with p-value < 0.01
+HBpar <- names(which(envfitHB$vectors$pvals < 0.05)) # names of parameters with p-value < 0.01
+# HBpar <- names(envHB) # all env
 
 # check selection for missing values
 HBdat %>%
@@ -610,13 +611,17 @@ HBdat %>%
 # For use as random factor
 HBdat$Site <- as.character(HBdat$Site)
 
+HBfullformula <- as.formula(paste("DCA1 ~ ", paste(HBpar, collapse = " + "), "+ (1|Site)", sep = ""))
+HBfullformula
+
 # Standarizing
 # https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html 
 
-HBfullformula <- as.formula(paste("DCA1 ~ ", paste(HBpar, collapse = " + "), "+ (1|Site)", sep = ""))
-
 sHB <- standardize(HBfullformula, HBdat)
-HBlmer <- lmer(sHB$formula, sHB$data)
+
+# Fullmodell
+HBlmer <- lmer(sHB$formula, sHB$data) # med standardiserte data
+# HBlmer <- lmer(HBfullformula, data = HBdat) # uten standardisering
 
 # Model selection
 # https://cran.r-project.org/web/packages/lmerTest/lmerTest.pdf 
@@ -636,7 +641,7 @@ plot(HBlmer_best)
 
 # Modellplot
 plot_model(HBlmer_best, type = "diag")
-plot_model(HBlmer_best, sort.est = TRUE)
+plot_model(HBlmer_best, type="est", sort.est = TRUE)
 ggsave ("Figures_rapp/ForestEffect_HBmodDCA.png", width = 6, height = 4, dpi=500)
 # effektplot kommer i neste bolk
 # kanksje må vi vurdere interaksjoner?
@@ -645,6 +650,57 @@ ggsave ("Figures_rapp/ForestEffect_HBmodDCA.png", width = 6, height = 4, dpi=500
 ```{r effect plot, fig.height = 10}
 plot_model(HBlmer_best, type = "slope", show.data = TRUE)
 ggsave ("Figures_rapp/ForestEffect_HBmodDCA.png", width = 10, height = 10, dpi=500)
+```
+
+```{r effect table, fig.height = 10}
+tab_model(HBlmer_best, show.est = FALSE, show.intercept = FALSE)
+```
+
+```{r visualization of effects}
+# henter ut parameterestimater (skalert)
+fixedHB <- fixef(HBlmer_best)
+df.fixedHB <- data.frame(fixedHB, seq(1:length(fixedHB)))
+names(df.fixedHB)[2] <- "index"
+rm(fixedHB)
+
+df.fixedHB <- df.fixedHB[-1, ] # gidder ikke styre med å fjerne intercept under
+
+# plot
+DCAplot_effects <- df.fixedHB %>%
+  ggplot(aes(index, HBfixed, color = as.character(Site))) +
+    geom_segment(data = df.fixedHB[df.fixedHB$fixedHB < 0, ], aes(x=index, xend=index, y=0, yend=fixedHB), 
+                 linetype="solid", 
+                 arrow = arrow(length = unit(0.2, "cm"), type="closed"),
+                 size = 0.5, col = "tomato2") +
+    geom_segment(data = df.fixedHB[df.fixedHB$fixedHB > 0, ], aes(x=index, xend=index, y=0, yend=fixedHB), 
+                 linetype="solid", 
+                 arrow = arrow(length = unit(0.2, "cm"), type="closed"),
+                 size = 0.5, col = "cadetblue") +
+    geom_text(data = df.fixedHB, 
+              aes(x = index, y = fixedHB*1.1, label = row.names(df.fixedHB)),  
+                color = "gray17", size = 3) +
+    labs(y = "Effects") +
+    xlim(-3, 12) +
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
+DCAplot_dots <- HBdat %>% 
+  ggplot(aes(Year, DCA1, color = as.character(Site))) +
+    geom_point(alpha = 0.5) +
+    geom_smooth() +
+    scale_color_hue(labels = c("HT113", "HR104")) +
+    labs(color = "Station") +
+    theme(axis.title.x=element_blank(),
+#        axis.text.x=element_blank(),
+#        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) 
+
+grid.arrange(DCAplot_dots, DCAplot_effects, nrow=1, widths = c(1,1))
+
 ```
 
 
@@ -659,10 +715,8 @@ BB35df <- readr::read_csv2("Data_produced/BBordSites_35.csv")
 names(BB35df)
 
 # coupling the two using dplyr, by Year
-BB05_dat <- # joining and removing phyto from the mix
-  BB05df %>% 
-    left_join(dat_sel, by = "Year") %>% # join
-    dplyr::select(-ends_with("_med")) # remove phytopl
+BB05_dat <- BB05df %>% # joining and removing phyto from the mix
+    left_join(dat_sel_mod, by = "Year")
 
 DCA05 <- BB05_dat %>% 
   dplyr::select(DCA1:DCA4)
@@ -671,7 +725,7 @@ DCA35 <- BB35df %>%
   dplyr::select(DCA1:DCA4)
 
 envBB <- BB05_dat %>% 
-  dplyr::select(Hydro_Chla_Surface:Winter_NAO)
+  dplyr::select(Hydro_Chla_Deep:Winter_NAO)
 
 
 BB35_dat <- bind_cols(BB35df[,-1], envBB)
@@ -683,15 +737,18 @@ envfitBB35 <- envfit(DCA35, envBB, na.rm = TRUE, permutations = 999, choices = 1
 envfitBB35 
 # 2 obs fjernes pga NA
 
-plot(DCA05[1:2])
-plot(envfitBB05, p.max = 0.05, add = TRUE)
-plot(DCA35[1:2])
-plot(envfitBB35, p.max = 0.05, add = TRUE)
+#plot(DCA05[1:2])
+#plot(envfitBB05, p.max = 0.05, add = TRUE)
+#plot(DCA35[1:2])
+#plot(envfitBB35, p.max = 0.05, add = TRUE)
 
 # plotting parameters with p-value < 0.01 in relation to ordination. Can make this into a ggplot if needed
 
-BB05par <- names(which(envfitBB05$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
-BB35par <- names(which(envfitBB35$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+ BB05par <- names(which(envfitBB05$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+ BB35par <- names(which(envfitBB35$vectors$pvals < 0.05)) # names of parameters with p-value < 0.05
+
+# BB05par <- names(envBB) # all parameters
+# BB35par <- names(envBB) # all parameters
 
 ```
 
@@ -704,26 +761,46 @@ BB35par <- names(which(envfitBB35$vectors$pvals < 0.05)) # names of parameters w
 BB05_fullformula <- as.formula(paste("DCA1 ~ ", paste(BB05par, collapse = " + "), sep = ""))
 BB35_fullformula <- as.formula(paste("DCA1 ~ ", paste(BB35par, collapse = " + "), sep = ""))
 
+# med lag
+BB05_fullformula_dyn <- as.formula(paste("DCA1 ~ L(", paste(BB05par, collapse = ", 2) + L("), ", 2)", sep = ""))
+BB35_fullformula_dyn <- as.formula(paste("DCA1 ~ L(", paste(BB35par, collapse = ", 2) + L("), ", 2)", sep = ""))
+
+
+BB05_fullformula
+
 sBB05 <- standardize(BB05_fullformula, BB05_dat)
 sBB35 <- standardize(BB35_fullformula, BB35_dat)
 
 # Model and selection
+n1 = length(BB05_dat$DCA1)
 BB05_lm <- lm(sBB05$formula, sBB05$data)
-BB05_select <- stepAIC(BB05_lm, direction = "both", trace = 0) 
+BB05_select <- stepAIC(BB05_lm, direction = "both", trace = 0, k = log(n1)) # BIC
 BB05_select
 
+n2 = length(BB35_dat$DCA1)
 BB35_lm <- lm(sBB35$formula, sBB35$data)
-BB35_select <- stepAIC(BB35_lm, direction = "both", trace = 0) 
+BB35_select <- stepAIC(BB35_lm, direction = "both", trace = 0, k = log(n2)) # BIC
+BB35_select
+
+# With lag-effects?
+n1 = length(BB05_dat$DCA1)
+BB05_lm <- dynlm(BB05_fullformula_dyn, BB05_dat)
+BB05_select <- stepAIC(BB05_lm, direction = "both", trace = 0, k = log(n1)) # BIC
+BB05_select
+
+n2 = length(BB35_dat$DCA1)
+BB35_lm <- dynlm(BB35_fullformula_dyn, BB35_dat)
+BB35_select <- stepAIC(BB35_lm, direction = "both", trace = 0, k = log(n2)) # BIC
 BB35_select
 
 # Modellplot BB05
 plot_model(BB05_lm, type = "diag")
-plot_model(BB05_lm, sort.est = TRUE)
+plot_model(BB05_lm, sort.est = TRUE, title = "DCA - BR1")
 ggsave ("Figures_rapp/ForestEffect_BB05DCA.png", width = 6, height = 4, dpi=500)
 
 # Modellplot BB35
 plot_model(BB35_lm, type = "diag")
-plot_model(BB35_lm, sort.est = TRUE)
+plot_model(BB35_lm, sort.est = TRUE, title = "DCA - BT44")
 ggsave ("Figures_rapp/ForestEffect_BB35DCA.png", width = 6, height = 4, dpi=500)
 
 # effektplot kommer i neste bolk
@@ -731,11 +808,90 @@ ggsave ("Figures_rapp/ForestEffect_BB35DCA.png", width = 6, height = 4, dpi=500)
 ```
 
 ```{r effect plot, fig.height = 10}
-plot_model(BB05_lm, type = "slope", show.data = TRUE)
+plot_model(BB05_lm, type = "slope", show.data = TRUE, title = "DCA - BR1")
 ggsave ("Figures_rapp/ForestEffect_BB05DCA.png", width = 10, height = 10, dpi=500)
 
-plot_model(BB35_lm, type = "slope", show.data = TRUE)
+plot_model(BB35_lm, type = "slope", show.data = TRUE, title = "DCA - BT44")
 ggsave ("Figures_rapp/ForestEffect_BB05DCA.png", width = 10, height = 10, dpi=500)
+```
+
+```{r effect table, fig.height = 10}
+tab_model(BB05_lm, BB35_lm)
+```
+
+### NQI?
+```{r NQI?}
+df_BB_indeks <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til Helene og Dag.xlsx", sheet = "indekser_sedimentparametere")
+
+head(df_BB_indeks)
+
+df_NQI_mean <- df_BB_indeks %>% 
+  group_by(STAS, Year) %>%
+  summarise(Mean = mean(NQI1, na.rm = TRUE))
+
+head(df_NQI_mean)
+
+ggplot(df_NQI_mean, aes(Year, Mean, colors = STAS))+
+  geom_point()
+
+# to ulike modeller kanskje
+
+names(envBB)
+
+BB05_datNQI <- df_NQI_mean %>% 
+  filter(STAS=="B05") %>% 
+  left_join(dat_sel_mod, by = "Year")
+
+BB35_datNQI <- df_NQI_mean %>% 
+  filter(STAS=="B35") %>% 
+  left_join(dat_sel_mod, by = "Year")
+
+# Standarizing - kjører her inn alle parametere
+BB05_NQI_fullformula <- as.formula(paste("Mean ~ L(", paste(BB05par, collapse = ", 5) + L("), ", 5)", sep = ""))
+BB35_NQI_fullformula <- as.formula(paste("Mean ~ L(", paste(BB35par, collapse = ", 5) + L("), ", 5)", sep = ""))
+
+sBB05_NQI <- standardize(BB05_NQI_fullformula, BB05_datNQI)
+sBB35_NQI <- standardize(BB35_NQI_fullformula, BB35_datNQI)
+
+# Model and selection
+n1 = length(BB05_datNQI$Mean)
+BB05NQI_lm <- lm(sBB05_NQI$formula, sBB05_NQI$data)
+BB05NQI_select <- stepAIC(BB05NQI_lm, direction = "both", trace = 0, k = log(n1)) # BIC
+BB05NQI_select
+
+n2 = length(BB35_datNQI$Mean)
+BB35NQI_lm <- lm(sBB35_NQI$formula, sBB35_NQI$data)
+BB35NQI_select <- stepAIC(BB35NQI_lm, direction = "both", trace = 0, k = log(n2)) # BIC
+BB35NQI_select
+
+# With lag-effects
+n1 = length(BB05_datNQI$Mean)
+BB05NQI_lm <- dynlm(BB05_NQI_fullformula, BB05_datNQI)
+BB05NQI_select <- stepAIC(BB05NQI_lm, direction = "both", trace = 0, k = log(n1)) # BIC
+BB05NQI_select
+
+n2 = length(BB35_datNQI$Mean)
+BB35NQI_lm <- dynlm(BB35_NQI_fullformula, BB35_datNQI)
+BB35NQI_select <- stepAIC(BB35NQI_lm, direction = "both", trace = 0, k = log(n2)) # BIC
+BB35NQI_select
+
+
+# Modellplot BB05
+plot_model(BB05NQI_lm, type = "diag")
+plot_model(BB05NQI_lm, sort.est = TRUE, title = "NQI - BR1")
+ggsave ("Figures_rapp/ForestEffect_BB05NQI.png", width = 6, height = 4, dpi=500)
+
+# Modellplot BB35
+plot_model(BB35NQI_lm, type = "diag")
+plot_model(BB35NQI_lm, sort.est = TRUE, title = "NQI - BT44")
+ggsave ("Figures_rapp/ForestEffect_BB35NQI.png", width = 6, height = 4, dpi=500)
+
+# effektplot kommer i neste bolk
+# kanksje må vi vurdere interaksjoner?
+```
+
+```{r effect table, fig.height = 10}
+tab_model(BB05NQI_lm, BB35NQI_lm, show.est = FALSE, show.intercept = FALSE)
 ```
 
 ## Plankton - Bloom 2
