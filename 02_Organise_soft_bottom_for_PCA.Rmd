@@ -364,6 +364,7 @@ df_blot_ind <- read_excel("Datasett/Bløtbunn/Klimaoverblikk bløtbunn_data til He
 cat("b35, number of species:", nrow(df_blot_b35), ", Number of years:", ncol(df_blot_b35), "\n")
 cat("b05, number of species:", nrow(df_blot_b05), ", Number of years:", ncol(df_blot_b05), "\n")
 
+head(df_blot_b05)
 
 ```
 
@@ -377,6 +378,8 @@ df_long_2 <- df_blot_b35 %>%
 df_long <- bind_rows(df_long_1, df_long_2) %>%
   mutate(Site = substr(Siteyear, 1,3), Year = as.numeric(substr(Siteyear, 5,8))) %>%
   dplyr::select(Site, Year, Species, Value)
+
+head(df_long)
 
 str(df_long)
 head (df_long)
