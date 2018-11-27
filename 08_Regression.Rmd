@@ -17,7 +17,9 @@ Check out package dynlm for including lagged variables - see https://stackoverfl
 
 ## 0. Libraries
 ```{r}
-
+# to check which libraries are set
+#.libPaths()
+#.libPaths("C:/Data/R/R-3.5.1/library")
 library(tidyverse)
 library(readxl)
 library(MASS)
@@ -29,21 +31,16 @@ library(lme4) # for mixed effect models
 library(standardize) # standardize data for modelling
 #install.packages("afex")
 library(afex) # adding p-values to lmer output
-# install.packages("sjPlot") # NB! denne krever relativt oppdatert versjon av R
+#install.packages("sjPlot") 
 library(sjPlot) # effectplots lmer
-library(corrplot)
-library(gtable)
-library(gridExtra)
-library(grid)
-library(ggplot2)
-library(lattice)
 # library(pander)
-#install.packages("glmulti",  lib = "H:/Documents/R/win-library/3.4")
-#library(glmulti, lib.loc="H:/Documents/R/win-library/3.4")
-#install.packages("rJava",  lib = "H:/Documents/R/win-library/3.4")
-#library(rJava, lib.loc="H:/Documents/R/win-library/3.4")
+#install.packages("glmulti")
+library(glmulti)
+#install.packages("rJava") # NB! I needed to installe Java for Windows x64 here: https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
-
+install.packages("MuMIn") 
+library(MuMIn)
+#library(rJava)
 ```
 
 ## 1. Data  
@@ -104,6 +101,7 @@ plot (dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep)
 plot (dat$Hydro_TSM_Deep, dat$Hydro_PON_Deep)
 plot (dat$Hydro_POC_Deep, dat$Hydro_POC_Intermediate)
 plot (dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate)
+cor(dat$Hydro_POC_Surface, dat$Hydro_POC_Intermediate, use = "complete.obs")
 #cor(dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep, use = "complete.obs")
 #cor(dat$Hydro_PON_Deep, dat$Hydro_PON_Intermediate, use = "complete.obs")
 #cor(dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate, use = "complete.obs")
@@ -249,35 +247,146 @@ shapiro.test(dat_sel$Hydro_TSM_Deep); shapiro.test(dat_sel$River_TOC)
 ## Plot using a qqplot
 qqnorm(dat_sel$Hydro_TSM_Deep);qqline(dat_sel$Hydro_TSM_Deep, col = 2)
 qqnorm(dat_sel$River_TOC);qqline(dat_sel$River_TOC, col = 2)
-
-# many appear to be heteroscedadastic, SD increase with mean
-# As I mentioned before, Toms suggested solution to this was Glm with gamma distribution.... any other suggestions?
+qqnorm(dat_sel$Hydro_POC_Surface);qqline(dat_sel$Hydro_POC_Surface, col = 2)
 
 ```
 
-### GLM models - subjective predictor choice
+
+### Linear models - selected responses using BIC
 ```{r}
-str(dat_sel)
+#options (na.action= "na.fail") 
+?dredge
 
-# Winter_NAO River__TOC
+### 1a POC Surface
+full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
 
-### 1a. Surface salinity
-full_model <- glm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel, family = Gamma(link = "identity"))
-#summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
+tab_model (get.models(min_model, 1)[[1]])
+# , file = "Figures_rapp/Regressions_POC_Surf_table.html"
+ggsave ("Figures_rapp/Regressions_POC_Surf.png", width = 8, height = 6, dpi=500)
 
-### 1b. Deep salinity
-full_model <- glm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel, family = Gamma(link = "identity"))
-#summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
+### 1b POC Intermediate
+full_model <- lm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotN_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_POC_Intermed.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+### 2a TSM Surface
+full_model <- lm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_TSM_Surf.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+### 2a TSM Deep
+full_model <- lm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotP_Surface + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_TSM_Deep.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+
+
+### 1a Salinity Surface
+full_model <- lm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+ggsave ("Figures_rapp/Regressions_Salinity_Surface.png", width = 8, height = 6, dpi=500)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+### 1a Salinity Deep
+full_model <- lm(Hydro_Salinity_Deep ~ River_Discharge + Winter_NAO, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+tab_model (get.models(min_model, 1)[[1]])
+
+### Chla Surface
+full_model <- lm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Secchi_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+summary (get.models(min_model, 1)[[1]])
+# Plot model
+# model diagnostics
+plot(get.models(min_model, 1)[[1]])
+plot_model(get.models(min_model, 1)[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+#effektplot
+plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+
+tab_model (get.models(min_model, 1)[[1]])
 
 # relevant to add wind here
 # River discharge more explanatory power than NAO??? just that they change in same direction??
@@ -289,93 +398,9 @@ par(mfrow = c(2,2), mar = c(4,5,2,1))
 plot(step_model)
 visreg(step_model, points = list(cex = 1))
 
-# 2a. Surface TSM 
-full_model <- glm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # River TOC and salinity surface higest significance
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-visreg(step_model, "River_TOC")
-
-# 2b. deep TSM
-full_model <- glm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotP_Surface + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # highest TSM_Surface
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 3a. Surface POC 
-full_model <- glm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # River TOC and salinity surface higest significance, also river_SPM
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# 3b.Intermediate POC
-full_model <- glm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotP_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # only River_TOC...
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-# surface Chla 
-full_model <- glm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotP_Surface + Hydro_Secchi_Surface, data = dat_sel, family = Gamma(link = "identity"))
-summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model) # highest POC_surface, also river_TOC
-par(mfrow = c(2,2), mar = c(4,5,2,1))
-plot(step_model)
-visreg(step_model, points = list(cex = 1))
-
-
-
-
-
 ```
-
-### GLM models - Automated predictor selection - NOT TESTED YET!
+### Linear models - OLD using step AIC
 ```{r}
-str(dat_sel)
-
-names (dat_sel)
-
-# examples from here:
-# https://rstudio-pubs-static.s3.amazonaws.com/2897_9220b21cfc0c43a396ff9abf122bb351.html
-
-
-
-glmulti.POC <-
-    glmulti(Hydro_POC_Surface ~ age + lwt + race.cat + smoke + preterm + ht + ui + ftv.cat, data = lbw,
-            level = 1,               # No interaction considered
-            method = "h",            # Exhaustive approach
-            crit = "aic",            # AIC as criteria
-            confsetsize = 3,         # Keep 5 best models
-            plotty = F, report = F,  # No plot or interim reports
-            fitfunction = "glm",     # glm function
-            family = gamma)       # gamma family
-
-## Show result for the best model
-summary(glmulti.POC@objects[[1]])
-
-#check also: library(bestglm)
-```
-
-### Linear models
-```{r}
-### a. Surface salinity
-full_model <- lm(Salinity_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO, data = dat)
-# summary(full_model)
-step_model <- stepAIC(full_model, direction = "both", trace = FALSE)
-summary(step_model)
-
 ### b. Surface Total N
 full_model <- lm(TotN_Surface ~ River_Local_Discharge + River_Distant_Discharge + Winter_NAO +
                  River_Local_TotN + River_Distant_TotN, data = dat)
@@ -477,6 +502,55 @@ summary(step_model)
 visreg(step_model, points = list(cex = 1))
 ```
 
+### GLM models - using glmulti
+* Decided to go with lm (above) because no real improvement in diagnostics with glm
+```{r}
+str(dat_sel)
+
+# Taken example from here:
+# https://rstudio-pubs-static.s3.amazonaws.com/2897_9220b21cfc0c43a396ff9abf122bb351.html
+
+
+#?glmulti
+# explanation of terms
+#level = 1,# No interaction considered
+#method = "h",# Exhaustive approach
+#crit = "bic",# BIC as criteria
+#confsetsize = 3,# Keep 3 best models
+#plotty = F, report = F,  # No plot or interim reports
+#fitfunction = "glm",     # glm function
+#family = Gamma(link = "identity"))# gamma family
+
+# using AIC (min model includes terms that are not significant....)
+POC_aic <-
+  glmulti(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface,
+          data = dat_sel, level = 1,method = "h", crit = "aic",confsetsize = 3,plotty = F, report = F,fitfunction = "glm", family = Gamma(link = "identity"))
+
+# using BIC (less terms retained in min model)
+POC_bic <-
+  glmulti(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface,
+          data = dat_sel, level = 1,method = "h", crit = "bic",confsetsize = 3,plotty = F, report = F,fitfunction = "glm", family = Gamma(link = "identity"))
+
+## Show result for the best model
+#summary(POC_aic@objects[[1]])
+summary(POC_bic@objects[[1]])
+
+#### NB! diagnostics does not look very good... neither does effect plot.
+# is glm/gamma dist not the right model here, or can you see any errors in specifying the models above?
+# diagnostic plot
+plot_model(POC_bic@objects[[1]], type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(POC_bic@objects[[1]], sort.est = TRUE)
+#effektplot
+plot_model(POC_bic@objects[[1]], type = "slope", show.data = TRUE)
+
+#ggsave ("Figures_rapp/.png", width = 10, height = 10, dpi=500)
+
+
+
+
+```
+
 
 # PART TWO - Biologigal data
 
@@ -492,56 +566,6 @@ We're trying to find meaningful ways to describe the relationship between biolog
   + GLM for soft bottom (one model per station for DCA at least) and plankton
 * Probably makes sense to use the same set of explanatory variables in model selection for every response witin a system
 * Should perhaps add some variables as factors.
-
-## Correlation between envpar
-```{r correlations envvar, fig.height=15, fig.width=15}
-# check correlations Hydro
-dat_sel %>%
-#  dplyr::select(-ends_with("_Deep")) %>%  # remove Deep 
-  dplyr::select(starts_with("Hydro")) %>% 
-  rename_at(.vars = vars(starts_with("Hydro_")), .funs = funs(sub("Hydro_", "", .))) %>%
-  cor() %>% 
-  corrplot.mixed(tl.pos = "l", tl.cex = 0.75, number.cex = 0.75)
-
-dat_sel %>%
-#  dplyr::select(-ends_with("_Deep")) %>%  # remove Deep 
-  dplyr::select(starts_with("Hydro")) %>% 
-  rename_at(.vars = vars(starts_with("Hydro_")), .funs = funs(sub("Hydro_", "", .))) %>%
-  cor() %>% 
-  corrplot(type="upper", tl.col = "gray17", tl.cex = 1.2)
-
-```
-
-```{r, fig.height=5, fig.width=5}
-
-# check correlations River
-dat_sel %>%
-#  dplyr::select(-ends_with("_Deep")) %>%  # remove Deep 
-  dplyr::select(starts_with("River")) %>% 
-  rename_at(.vars = vars(starts_with("River_")), .funs = funs(sub("River_", "", .))) %>%
-  cor() %>% 
-  corrplot.mixed(tl.pos = "d", tl.cex=0.7, tl.col="gray17")
-```
-
-
-```{r select envvars}
-# fjerner enkelte av parameterne i par med korr > 0.8 (velger typisk intermediate over surface-verdier)
-utgar <- c("Hydro_DIN_Surface", "Hydro_POC_Surface", "Hydro_PON_Surface", "Hydro_Si_Surface", "Hydro_Si_Deep", "Hydro_Temperature_Surface", "Hydro_Temperature_Deep", "Hydro_TotP_Deep", "Hydro_TotN_Surface","Hydro_O2_Intermediate") #, "River_TOC", "River_TotN"
-# PO4 intermediate og deep skal kanskje også ut...
-# Fjerner River TOC og River TotN som er sterkt korrelert med Discharge ++
-# Fjerner også TSM pga korr med Discharge
-# Eller tar bort alt av River
-
-dat_sel_mod <-
-  dat_sel %>% 
-  dplyr::select(-one_of(utgar)) %>% 
-  dplyr::select(-contains("PO4")) %>%
-  dplyr::select(-contains("River")) 
-#  dplyr::select(-contains("TSM")) tar med denne når River er borte
-  
-names(dat_sel_mod)
-```
-
 
 ## Hard bottom
 ### Environmental variables in relation to ordination
