@@ -1,0 +1,282 @@
+---
+title: "10 Regression plankton"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    df_print: paged   
+---
+
+# Regression of plankton
+
+Regression analysis of plankton variables  
+  
+Parts 0 + 1a-e (libraries + data) is identical to script 08 (copied 26.11 kl. 22:00)  
+
+
+## 0. Libraries
+```{r}
+# to check which libraries are set
+#.libPaths()
+#.libPaths("C:/Data/R/R-3.5.1/library")
+library(tidyverse)
+library(readxl)
+library(MASS)
+library (ggplot2)
+library(visreg)
+library(vegan)
+library(lme4) # for mixed effect models
+#install.packages("standardize")
+library(standardize) # standardize data for modelling
+#install.packages("afex")
+library(afex) # adding p-values to lmer output
+#install.packages("sjPlot") 
+library(sjPlot) # effectplots lmer
+# library(pander)
+#install.packages("glmulti")
+library(glmulti)
+#install.packages("rJava") # NB! I needed to installe Java for Windows x64 here: https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
+
+install.packages("MuMIn") 
+library(MuMIn)
+#library(rJava)
+```
+
+## 1. Data  
+### a. Read
+```{r}
+dat_a <- read.csv("Data_produced/06_dat_a.csv")
+dat_q <- read.csv("Data_produced/06_dat_q.csv")
+```
+
+### b. Check variables
+```{r}
+unique(dat_a$Variable)
+```
+
+### c. Make data on broad format
+```{r}
+dat <- 
+  dat_a %>% 
+  spread(Variable, Value)
+```
+
+
+### d. Add NAO data
+```{r}
+df_nao <- read.table("https://climatedataguide.ucar.edu/sites/default/files/nao_station_djfm.txt", skip = 1, header = FALSE)
+colnames(df_nao) <- c("Year", "Winter_NAO")
+
+dat <- left_join(dat, df_nao)
+
+```
+
+### e. Wind data ??? Dag you mentioned you had files for Færder and Torungen?
+
+
+### f. Checking missing years in dataset
+* NB! TSM has been interpolated for 2012-2013, we decided not to interpolate the _Deep nutrients and POM, because these are at the end of the time series
+```{r}
+
+str(dat)
+
+check <-  dat %>%
+  summarise_all(funs(sum(is.na(.))))
+
+complete.cases(dat)
+# there are missing values for four first years (1990-1994) and the last four years (2013-2016)
+  #River TOC missing in 1990 and 1991, 
+  #P measurements from hydro missing 1990
+  #Plankton group data start in 1994
+  #River_Si starts in 1995
+  # DIN_deep, POC_deep, PON,_deep and POP_deep is missing from 2013-2016
+
+# Suggestion: 
+  #1. We cut 1990 and 1991 from the dataset (many missing variables)
+  #2. we cut variables that have more than one year missing (have them separate below so we can test)
+
+# NB! keep in mind that the deep POC and PON are the variables with highest upward trends in the MannKendal test. but a possible proxy could be the TSM_deep which is sampled over the whole time period, and has fairly high correlation with POC (0.63). High correlations also between the deep and intermediate values for POC (0.75), PON (0.74) and DIN (0.72). 
+plot (dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep)
+plot (dat$Hydro_TSM_Deep, dat$Hydro_PON_Deep)
+plot (dat$Hydro_POC_Deep, dat$Hydro_POC_Intermediate)
+plot (dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate)
+cor(dat$Hydro_POC_Surface, dat$Hydro_POC_Intermediate, use = "complete.obs")
+#cor(dat$Hydro_TSM_Deep, dat$Hydro_POC_Deep, use = "complete.obs")
+#cor(dat$Hydro_PON_Deep, dat$Hydro_PON_Intermediate, use = "complete.obs")
+#cor(dat$Hydro_DIN_Deep, dat$Hydro_DIN_Intermediate, use = "complete.obs")
+
+# filter the datasets according to suggestion above
+cols <- c("Hydro_DIN_Deep", "Hydro_POC_Deep", "Hydro_PON_Deep", "Hydro_POP_Deep", "River_Si")
+
+dat_sel <- dat %>% 
+  filter(Year != 1990 & Year != 1991) %>% 
+  # dplyr::select(-starts_with('Plank')) %>% 
+  dplyr::select(-one_of(cols))    
+
+```
+
+
+# Plankton data
+
+## a. Diatoms
+```{r}
+dat_sel2 <- dat_sel[complete.cases(dat_sel),]
+
+### 1a Diatoms
+full_model <- lm(Plankton_Diatoms ~ River_TOC + River_SPM + Winter_NAO + 
+                    Hydro_Salinity_Surface + 
+                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
+                    Hydro_TotP_Surface + Hydro_TotN_Surface +
+                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+                  data = dat_sel2) 
+# summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+model_diatoms <- get.models(min_model, 1)[[1]]
+summary (model_diatoms)
+# Plot model
+# model diagnostics
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(model_diatoms)
+# plot_model(model_diatoms, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_diatoms, sort.est = TRUE)
+
+#effektplot
+plot_model(model_diatoms, type = "slope", show.data = TRUE)
+visreg(get.models(min_model, 1)[[1]],  points = list(cex = 1))
+
+tab_model (model_diatoms)
+# , file = "Figures_rapp/Regressions_POC_Surf_table.html"
+```
+
+## b. Dinoflagellates
+### Including Hydro_Secchi_Surface
+```{r}
+# 1b
+full_model <- lm(Plankton_Dinoflagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
+                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
+                    Hydro_TotP_Surface + Hydro_TotN_Surface +
+                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+                  data = dat_sel2) 
+# summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+model_dinoflag01 <- get.models(min_model, 1)[[1]]
+summary (model_dinoflag01)
+# Plot model
+# model diagnostics
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(model_dinoflag01)
+# plot_model(model_dinoflag01, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_dinoflag01, sort.est = TRUE)
+
+#effektplot
+# plot_model(model_dinoflag01, type = "slope", show.data = TRUE)
+par(mfrow = c(2,3), mar = c(4,5,2,1))
+visreg(model_dinoflag01,  points = list(cex = 1))
+
+tab_model (model_dinoflag01)
+
+
+```
+
+### Excluding Hydro_Chla_Surface + Hydro_Secchi_Surface
+```{r}
+# 1b
+full_model <- lm(Plankton_Dinoflagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
+                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
+                    Hydro_TotP_Surface + Hydro_TotN_Surface +
+                    Hydro_Temperature_Surface, 
+                  data = dat_sel2) 
+# summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+model_dinoflag02 <- get.models(min_model, 1)[[1]]
+summary (model_dinoflag02)
+# Plot model
+# model diagnostics
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(model_dinoflag02)
+# plot_model(model_dinoflag02, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_dinoflag02, sort.est = TRUE)
+
+#effektplot
+# plot_model(model_dinoflag02, type = "slope", show.data = TRUE)
+par(mfrow = c(2,3), mar = c(4,5,2,1))
+visreg(model_dinoflag02,  points = list(cex = 1))
+
+tab_model (model_dinoflag02)
+
+
+```
+
+
+
+## c. Flagellates
+### Including Hydro_Secchi_Surface
+```{r}
+# 1b
+full_model <- lm(Plankton_Flagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
+                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
+                    Hydro_TotP_Surface + Hydro_TotN_Surface +
+                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+                  data = dat_sel2) 
+# summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+model_flag02 <- get.models(min_model, 1)[[1]]
+summary (model_flag02)
+# Plot model
+# model diagnostics
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(model_flag02)
+# plot_model(model_flag02, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_flag02, sort.est = TRUE)
+
+#effektplot
+# plot_model(model_flag02, type = "slope", show.data = TRUE)
+par(mfrow = c(2,3), mar = c(4,5,2,1))
+visreg(model_flag02,  points = list(cex = 1))
+
+tab_model (model_flag02)
+
+
+```
+
+### Excluding Hydro_Chla_Surface + Hydro_Secchi_Surface
+```{r}
+# 1b
+full_model <- lm(Plankton_Flagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
+                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
+                    Hydro_TotP_Surface + Hydro_TotN_Surface +
+                    Hydro_Temperature_Surface, 
+                  data = dat_sel2) 
+# summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+model_flag02 <- get.models(min_model, 1)[[1]]
+summary (model_flag02)
+# Plot model
+# model diagnostics
+par(mfrow = c(2,2), mar = c(4,5,2,1))
+plot(model_flag02)
+# plot_model(model_flag02, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_flag02, sort.est = TRUE)
+
+#effektplot
+# plot_model(model_flag02, type = "slope", show.data = TRUE)
+par(mfrow = c(2,3), mar = c(4,5,2,1))
+visreg(model_flag02,  points = list(cex = 1))
+
+tab_model (model_flag02)
+
+
+```
