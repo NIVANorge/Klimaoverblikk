@@ -125,23 +125,28 @@ tab[tab > 0]
 
 
 # Plankton data
+* excluding Hydro_Chla_Surface for all and two models for each group (a w/ secchi included, b w/ secchi excluded)
 ```{r}
 dat_sel2 <- dat_sel[complete.cases(dat_sel),]
 
 options(na.action = "na.fail")
 
 save_plots <- TRUE
+
+#NB! exclude Chla_surface for all
+
 ```
 
 ## a. Diatoms
+* include Si_Surface
 ```{r}
+
 
 ### 1a Diatoms
 full_model <- lm(Plankton_Diatoms ~ River_TOC + River_SPM + Winter_NAO + 
-                    Hydro_Salinity_Surface + 
-                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
-                    Hydro_TotP_Surface + Hydro_TotN_Surface +
-                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+                    Hydro_Salinity_Surface + Hydro_POC_Surface + Hydro_DIN_Surface
+                 + Hydro_PO4_Surface + Hydro_Si_Surface + Hydro_TotP_Surface +
+                   Hydro_TotN_Surface + Hydro_Temperature_Surface, 
                   data = dat_sel2) 
 # summary(full_model)
 # finne min model
@@ -178,10 +183,13 @@ tab_model (model_diatoms)
 ### Including Hydro_Secchi_Surface
 ```{r}
 # 1b
-full_model <- lm(Plankton_Dinoflagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
-                    Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
-                    Hydro_TotP_Surface + Hydro_TotN_Surface +
-                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+Hydro_Chla_Surface
+
+full_model <- lm(Plankton_Dinoflagellates ~ River_TOC + River_SPM + Winter_NAO +
+                   Hydro_Salinity_Surface + Hydro_POC_Surface + Hydro_DIN_Surface +
+                   Hydro_PO4_Surface + Hydro_TotP_Surface +
+                   Hydro_TotN_Surface + Hydro_Secchi_Surface +
+                   Hydro_Temperature_Surface, 
                   data = dat_sel2) 
 # summary(full_model)
 # finne min model
@@ -261,10 +269,12 @@ tab_model (model_dinoflag02)
 ### Including Hydro_Secchi_Surface
 ```{r}
 # 1b
+Hydro_Chla_Surface +
+
 full_model <- lm(Plankton_Flagellates ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + 
                     Hydro_POC_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + 
                     Hydro_TotP_Surface + Hydro_TotN_Surface +
-                    Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
+                     Hydro_Secchi_Surface + Hydro_Temperature_Surface, 
                   data = dat_sel2) 
 # summary(full_model)
 # finne min model
