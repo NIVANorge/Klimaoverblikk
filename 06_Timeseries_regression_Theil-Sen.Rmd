@@ -38,6 +38,8 @@ library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's sl
 #citation ("ggplot2")
 
 # library(pander)
+save_plots <- FALSE
+
 ```
 
 ## 1. Data (annual and partly seasonal)  
@@ -55,6 +57,9 @@ df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
 
 # plankton groups and ordination (use Bloom2)
 df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
+
+# Hard-bottom lower growth limit - EQR from MSMDI (lower growth limit index)
+df_lgm <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett2.csv")
 
 # ON HOLD: ordinations and indices
 # df_plank_ord <- readr::read_csv2("Data_produced/P02ord.csv")
@@ -130,6 +135,15 @@ df3a <- df_plank_summ_a %>%
   mutate(Variable = paste0("Plankton", "_", Variable)) %>%
   dplyr::select(Variable, Year,Value)
 
+df4 <- df_lgm %>%
+  filter(Site %in% c(407, 410)) %>%
+  mutate(Station = case_when(Site == 407 ~ "HT113",
+                             Site == 410 ~ "HR104")) %>%
+  mutate(Variable = paste0("Hardbottom_Lowergrowth_", Station)) %>%
+  rename(Value = EQR) %>%
+  dplyr::select(Variable, Year, Value)
+
+
 #ON HOLD: ordinations and indices
 # # df3b= plankton DCA1
 # df3b <- df_plank_ord %>%
@@ -165,8 +179,10 @@ df3a <- df_plank_summ_a %>%
 # collect all datasets
 
 #df3b, df4a, df4b, df4c, df5 #ON HOLD
-dat_a <- rbind(df1, df2, df3a) %>% as.data.frame()
+dat_a <- rbind(df1, df2, df3a, df4) %>% as.data.frame()
 #head(dat_a)
+
+
 ```
 
 ### c. Read quarterly data
@@ -360,7 +376,8 @@ ggplot(df, aes(x = Change_perc, y = Variable, fill = Quarter, size = P)) +
 	xlab("\nChange per year (%)") +
 	ylab("Variable\n")
 
-ggsave ("Figures_rapp/MannKendall_q.png", width = 7, height = 8, dpi=500)
+if (save_plots)
+  ggsave ("Figures_rapp/MannKendall_q.png", width = 7, height = 8, dpi=500)
 
 ```
 
@@ -369,9 +386,10 @@ ggsave ("Figures_rapp/MannKendall_q.png", width = 7, height = 8, dpi=500)
 # create the plot
 df <- df_result_a
 df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+df <- df[order(df$Change_perc),]
 # range(df$Change_perc)
 
-ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, size = P)) +
+gg <- ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, size = P)) +
   geom_vline(xintercept = 0) +
 	geom_point(pch = 21) +
   scale_fill_manual("Trend test", values = c("lightblue", "firebrick")) +
@@ -379,10 +397,54 @@ ggplot(df, aes(x = Change_perc, y = reorder(Variable, Change_perc), fill = P, si
 	scale_x_continuous(limits = c(-11, 4), breaks = seq(-10, 4, 2)) +
 	theme_dotplot +
 	xlab("\nChange per year (%)") +
-	ylab("Variable\n") +
-	ggtitle("Changes in annual means")
+	ylab("Variable\n")
 
-ggsave ("Figures_rapp/MannKendall_a.png", width = 7, height = 9, dpi=500)
+gg + theme(
+    legend.position = c(.35, .98),
+    legend.justification = c("right", "top"),
+    legend.box.just = "left",
+    legend.box.background = element_rect(),
+    legend.margin = margin(6, 6, 6, 6),
+    axis.title.x = element_text(size = rel(1)),
+    #axis.text.y = element_text(color = df$P),
+    axis.text.y = element_text(face = c("plain","bold")[df$P]),
+    axis.title.y = element_blank()
+  )
+
+if (save_plots)
+  ggsave ("Figures_rapp/MannKendall_a.png", width = 7, height = 9, dpi=500)
 
 
 ```
+
+## 7. Make table of trends for annual data 
+```{r}
+# install.packages("kableExtra")
+library(kableExtra)
+
+tab <- df_result_a %>%
+  mutate(Var_order = sub("River", "01", Variable),             # Ordering River first, then Hydro etc.
+         Var_order = sub("Hydro", "02", Var_order),
+         Var_order = sub("Plankton", "03", Var_order),
+         Var_order = sub("Hardbottom", "04", Var_order)) %>%
+  arrange(Var_order) %>%
+    mutate(
+    car = row.names(.),
+    Estimate = cell_spec(sprintf("%.4g", Estimate), bold = ifelse(P < 0.05, TRUE, FALSE)),
+    Change_perc = cell_spec(sprintf("%.2f", Change_perc, 2), bold = ifelse(P < 0.05, TRUE, FALSE)),
+    P = cell_spec(ifelse(P > 0.001, sprintf("%.2g", P), "<0.001"))
+  ) %>%
+  select(Variable, Estimate, Change_perc, P) %>%
+  kable(escape = F) %>%
+  kable_styling("condensed", full_width = F) 
+
+
+if (save_plots)
+  writeLines(tab, "Figures_rapp/MannKendall_a_table.html")
+# result is opened in web browser, Ctrl-A (to select all) and then copy-pasted to Word/Googledocs
+
+tab
+
+```
+
+
