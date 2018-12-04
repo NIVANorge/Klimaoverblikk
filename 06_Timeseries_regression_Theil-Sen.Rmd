@@ -38,7 +38,7 @@ library(rkt)        # rkt() - computes the Mann-Kendall tests and Theil-Sen's sl
 #citation ("ggplot2")
 
 # library(pander)
-save_plots <- FALSE
+save_plots <- TRUE
 
 ```
 
@@ -140,7 +140,7 @@ df4 <- df_lgm %>%
   filter(Site %in% c(407, 410)) %>%
   mutate(Station = case_when(Site == 407 ~ "HT113",
                              Site == 410 ~ "HR104")) %>%
-  mutate(Variable = paste0("Hardbottom_Lowergrowth_", Station)) %>%
+  mutate(Variable = paste0("HardBottom_Lowergrowth_", Station)) %>%
   rename(Value = EQR) %>%
   dplyr::select(Variable, Year, Value)
 
@@ -181,7 +181,7 @@ df5 <- df_blot_ind %>%
 
 #df3b, df4a, df4b, df4c, df5 #ON HOLD
 dat_a <- rbind(df1, df2, df3a, df4, df5) %>% as.data.frame()
-#head(dat_a)
+head(dat_a)
 
 
 ```
@@ -420,14 +420,16 @@ if (save_plots)
 
 ## 7. Make table of trends for annual data 
 ```{r}
-# install.packages("kableExtra")
+#install.packages("kableExtra")
+
 library(kableExtra)
 
 tab <- df_result_a %>%
   mutate(Var_order = sub("River", "01", Variable),             # Ordering River first, then Hydro etc.
          Var_order = sub("Hydro", "02", Var_order),
          Var_order = sub("Plankton", "03", Var_order),
-         Var_order = sub("Hardbottom", "04", Var_order)) %>%
+         Var_order = sub("HardBottom", "04", Var_order),
+          Var_order = sub("SoftBottom", "05", Var_order)) %>%
   arrange(Var_order) %>%
     mutate(
     car = row.names(.),
