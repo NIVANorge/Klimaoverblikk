@@ -65,16 +65,17 @@ df_lgm <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett2.csv")
 # df_plank_ord <- readr::read_csv2("Data_produced/P02ord.csv")
 # 
 # # soft bottom indices and ordinations
-# df_blot_ind <- read.csv("Data_produced/01_df_blot_ind.csv")
-# # retrieving softbottom ordinations ordinations
+df_blot_ind <- read.csv("Data_produced/01_df_blot_ind.csv")
+# rename soft-bottom stations
+levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B05"] <- "BR1"
+levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B35"] <- "BT44"
+
+# # retrieving softbottom ordinations
 # df_blot_ord_05 <- readr::read_csv2("Data_produced/BBordSites_05.csv")
 # #names(df_blot_ord_05)
 # df_blot_ord_35 <- readr::read_csv2("Data_produced/BBordSites_35.csv")
 # #names(df_blot_ord_35)
-# # rename soft-bottom stations
-# levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B05"] <- "BR1"
-# levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B35"] <- "BT44"
-#                           
+
 # # hard-bottom indices and ordinations
 # df_hard <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett.csv")
 # # rename hard-bottom stations
@@ -144,20 +145,20 @@ df4 <- df_lgm %>%
   dplyr::select(Variable, Year, Value)
 
 
+#df5 = soft-bottom NQI
+str (df_blot_ind)
+df5 <- df_blot_ind %>%
+   gather("Variable", "Value", NQI1) %>%
+   mutate(Variable = paste0("SoftBottom", "_", Variable, "_", STAS)) %>%
+   select(Variable, Year, Value)
+
 #ON HOLD: ordinations and indices
 # # df3b= plankton DCA1
 # df3b <- df_plank_ord %>%
 #   gather("Variable", "Value", DCA1) %>%
 #   mutate(Variable = paste0("Plankton", "_", Variable)) %>%
 #   select(Variable, Year,Value)
-# 
-# # df4a = soft-bottom NQI
-# #str (df_blot_ind)
-# df4a <- df_blot_ind %>%
-#   gather("Variable", "Value", NQI1) %>%
-#   mutate(Variable = paste0("SoftBottom", "_", Variable, "_", STAS)) %>%
-#   select(Variable, Year, Value)
-# 
+
 # # df4b + c = Soft-bottom ordinations for stations BR1 and BT44
 # df4b <- df_blot_ord_05 %>%
 #   gather("Variable", "Value", DCA1) %>%
@@ -179,7 +180,7 @@ df4 <- df_lgm %>%
 # collect all datasets
 
 #df3b, df4a, df4b, df4c, df5 #ON HOLD
-dat_a <- rbind(df1, df2, df3a, df4) %>% as.data.frame()
+dat_a <- rbind(df1, df2, df3a, df4, df5) %>% as.data.frame()
 #head(dat_a)
 
 
