@@ -28,6 +28,7 @@ library(zoo)
 #install.packages("cowplot")
 #library(cowplot)
 # library(pander)
+?geom_smooth
 ```
 
 ## 1. Folders and files    

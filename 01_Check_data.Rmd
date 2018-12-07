@@ -18,6 +18,8 @@ Getting an overview of the data
 library(tidyverse)
 library(readxl)
 library(pander)
+library(gridExtra)
+library(grid)
 ```
 
 ## 1. Folders and files    
@@ -321,7 +323,7 @@ df %>%
 ```{r LGD index species}
 
 # Guri: lagt inn dette som eksempel, tatt med Loess smoother som i de andre plottene, og endre aksetittel til engelsk. Kan vi broppe LGD for an hvert artsnavn? etterhvert også bytte stasjonsnavn til de "nye" (407=HT113 og 410=HR104)
-df[df$Site %in% c(407, 410), ] %>%
+LGDfig <- df[df$Site %in% c(407, 410), ] %>%
   gather("Species", "Value", `LGD.Halidrys siliquosa`:`LGD.Rhodomela confervoides`) %>%
   mutate(Species = sub("LGD.", "", Species)) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
@@ -331,6 +333,8 @@ df[df$Site %in% c(407, 410), ] %>%
     scale_y_reverse(limits=c(30,0)) +
     scale_color_hue(labels = c("HT113", "HR104")) +
     labs(x = "", y= "Lower growth depth (m)", color = "Station")
+
+LGDfig
 
 ggsave ("Figures_rapp/Hard_LGD_9species.png", width = 8, height = 6, dpi=500)
 
@@ -343,6 +347,26 @@ df[df$Site %in% c(407, 410), ] %>%
     facet_grid(Site~Species)
 
 ```
+
+MSMDI EQR
+
+```{r Hard-bottom diversity}
+
+MSMDIfig <- df[df$Site %in% c(407, 410), ] %>%
+  ggplot(aes(Year, EQR, color = as.character(Site))) +
+    geom_point() +
+    geom_smooth() +
+#    ylim(0, 1) +
+    scale_color_hue(labels = c("HT113", "HR104")) +
+    labs(x = "", y= "MSMDI-index (EQR-value)", color = "Station")
+
+ggsave(MSMDIfig, "Figures_rapp/MSMDI_EQR.png", width = 8, height = 6, dpi=500)
+```
+```{r, fig.height = 8, fig.width=8}
+grid.arrange(LGDfig, MSMDIfig, nrow=2)
+```
+
+
 ### f. Plot number of species within different groups
 ***GSA comments:***
 * Probably makes more sense to plot porportions over time though!
@@ -362,6 +386,8 @@ df[df$Site %in% c(407, 410), ] %>%
     labs(x = "", y= "Number of species", color = "Station")
 
 ggsave ("Figures_rapp/Hard_SpeciesGroups.png", width = 8, height = 6, dpi=500)
+
+plot(df$Green/(df$Brown) ~ df$Year)
 
 ```
 

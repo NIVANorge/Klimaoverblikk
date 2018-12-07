@@ -35,11 +35,16 @@ library(afex) # adding p-values to lmer output
 library(sjPlot) # effectplots lmer
 # library(pander)
 #install.packages("glmulti")
-library(glmulti)
+#library(glmulti)
 #install.packages("rJava") # NB! I needed to installe Java for Windows x64 here: https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 
-install.packages("MuMIn") 
+#install.packages("MuMIn") 
 library(MuMIn)
+#citation ("MuMIn")
+#citation ("ggplot2")
+citation ("rkt")
+citation ()
+
 #library(rJava)
 ```
 
@@ -127,7 +132,6 @@ dat_sel <- dat %>%
 * response variables chosen from apriori knowledge and MannKendall trends
 * predictor variables for each response chosen from ordination plots (in point 1, to reduce the number of highly correlated predictors) and expert judgement
 
-* will test both manually selecting predictor variables and automated (bestglm)
 
 
 ## 1. PCA of environmental variables
@@ -254,85 +258,219 @@ qqnorm(dat_sel$Hydro_POC_Surface);qqline(dat_sel$Hydro_POC_Surface, col = 2)
 
 ### Linear models - selected responses using BIC
 ```{r}
-#options (na.action= "na.fail") 
+options (na.action= "na.fail") 
 ?dredge
+
+# tab_model(BB05NQI_lm, BB35NQI_lm, show.est = FALSE, show.intercept = FALSE)
+
+save_plots <- TRUE
 
 ### 1a POC Surface
 full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_POCsurf <- get.models(min_model, 1)[[1]]
+summary (model_POCsurf)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_POCsurf)
+plot_model(model_POCsurf, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_POCsurf, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_POCsurf, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_POCsurf,  points = list(cex = 1))
 
-tab_model (get.models(min_model, 1)[[1]])
-# , file = "Figures_rapp/Regressions_POC_Surf_table.html"
-ggsave ("Figures_rapp/Regressions_POC_Surf.png", width = 8, height = 6, dpi=500)
+tab_model (model_POCsurf)
+
+#ggsave ("Figures_rapp/Regressions_POC_Surf.png", width = 8, height = 6, dpi=500)
+
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_POCsurf.png", width = 18, height = 15, unit = "cm", res = 400)
+  par(mfrow = c(2,2), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg(model_POCsurf,  points = list(cex = 1), ylab = "")
+  mtext("Surface POC concentration", 2, line = 1, outer = TRUE)
+  dev.off()
+}
+
+### 1a POC Surface - DETRENDED (included year as response and held fixed in dredge)
+full_model <- lm(Hydro_POC_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface + Year, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, fixed = "Year", rank = "BIC") 
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_POCsurf_yr <- get.models(min_model, 1)[[1]]
+summary (model_POCsurf_yr)
+tab_model (model_POCsurf_yr)
 
 ### 1b POC Intermediate
 full_model <- lm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotN_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_POCmed <- get.models(min_model, 1)[[1]]
+summary (model_POCmed)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_POCmed)
+plot_model(model_POCmed, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_POCmed, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_POCmed, type = "slope", show.data = TRUE)
+par(mfrow = c(1,2), mar = c(4,5,2,1))
+visreg(model_POCmed,  points = list(cex = 1))
 
-ggsave ("Figures_rapp/Regressions_POC_Intermed.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Regressions_POC_Intermed.png", width = 8, height = 6, dpi=500)
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_POCmed)
 
-### 2a TSM Surface
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_POCmed.png", width = 18, height = 7.5, unit = "cm", res = 400)
+  par(mfrow = c(1,3), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg (model_POCmed,  points = list(cex = 1), ylab = "")
+  mtext("Intermediate POC concentration", 2, line = 1, outer = TRUE)
+  dev.off()
+}
+
+### 1b POC Intermed - DETRENDED (included year as response and held fixed in dredge)
+full_model <- lm(Hydro_POC_Intermediate ~ Hydro_POC_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface + Year, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, fixed = "Year", rank = "BIC") 
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_POCmed_yr <- get.models(min_model, 1)[[1]]
+summary (model_POCmed_yr)
+tab_model (model_POCmed_yr)
+
+### 2a PON Surface
+full_model <- lm(Hydro_PON_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_PONsurf <- get.models(min_model, 1)[[1]]
+summary (model_PONsurf)
+# Plot model
+# model diagnostics
+plot(model_PONsurf)
+plot_model(model_PONsurf, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_PONsurf, sort.est = TRUE)
+#effektplot
+plot_model(model_PONsurf, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_PONsurf,  points = list(cex = 1))
+
+tab_model (model_PONsurf)
+
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_PONsurf.png", width = 18, height = 7.5, unit = "cm", res = 400)
+  par(mfrow = c(1,3), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg (model_PONsurf,  points = list(cex = 1), ylab = "")
+  mtext("Surface PON concentration", 2, line = 1, outer = TRUE)
+  dev.off()
+}
+
+### 2b PON intermed
+full_model <- lm(Hydro_PON_Intermediate ~ Hydro_PON_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Intermediate + Hydro_DIN_Intermediate + Hydro_PO4_Intermediate + Hydro_TotP_Intermediate + Hydro_TotN_Intermediate + Hydro_Chla_Intermediate + Hydro_Secchi_Surface, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, rank = "BIC") 
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_PONmed <- get.models(min_model, 1)[[1]]
+
+# Plot model
+# model diagnostics
+plot(model_PONmed)
+plot_model(model_PONmed, type = "diag")
+# plot model estimates (neutral line; vertical intercept that indicates no effect)
+plot_model(model_PONmed, sort.est = TRUE)
+#effektplot
+plot_model(model_PONmed, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_PONmed,  points = list(cex = 1))
+
+tab_model (model_PONmed)
+
+### 3a TSM Surface
 full_model <- lm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_TSMsurf <- get.models(min_model, 1)[[1]]
+summary (model_TSMsurf)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_TSMsurf)
+plot_model(model_TSMsurf, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_TSMsurf, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_TSMsurf, type = "slope", show.data = TRUE)
+par(mfrow = c(1,2), mar = c(4,5,2,1))
+visreg(model_TSMsurf,  points = list(cex = 1))
 
-ggsave ("Figures_rapp/Regressions_TSM_Surf.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Regressions_TSM_Surf.png", width = 8, height = 6, dpi=500)
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_TSMsurf)
+
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_TSMsurf.png", width = 18, height = 7.5, unit = "cm", res = 400)
+  par(mfrow = c(1,3), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg (model_TSMsurf,  points = list(cex = 1), ylab = "")
+  mtext("Surface TSM concentration", 2, line = 1, outer = TRUE)
+  dev.off()
+}
+
+### 32 TSM surf - DETRENDED (included year as response and held fixed in dredge)
+full_model <- lm(Hydro_TSM_Surface ~ River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Chla_Surface + Hydro_Secchi_Surface + Hydro_Temperature_Surface + Year, data = dat_sel) 
+summary(full_model)
+# finne min model
+min_model <- dredge (full_model, fixed = "Year", rank = "BIC") 
+# All models with dBIC < 2
+#subset(min_model, delta <= 2)
+model_TSMsurf_yr <- get.models(min_model, 1)[[1]]
+summary (model_TSMsurf_yr)
+tab_model (model_TSMsurf_yr)
 
 ### 2a TSM Deep
-full_model <- lm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotP_Surface + Hydro_Chla_Deep + Hydro_Secchi_Surface, data = dat_sel) 
+full_model <- lm(Hydro_TSM_Deep ~ Hydro_TSM_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_Salinity_Deep + Hydro_PO4_Deep + Hydro_TotP_Deep + Hydro_TotN_Deep + Hydro_Chla_Deep + Hydro_Secchi_Surface + Hydro_Temperature_Deep, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_TSMdeep <- get.models(min_model, 1)[[1]]
+summary (model_TSMdeep)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_TSMdeep)
+plot_model(model_TSMdeep, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_TSMdeep, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_TSMdeep, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_TSMdeep,  points = list(cex = 1))
 
-ggsave ("Figures_rapp/Regressions_TSM_Deep.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Regressions_TSM_Deep.png", width = 8, height = 6, dpi=500)
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_TSMdeep)
 
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_TSMdeep.png", width = 18, height = 7.5, unit = "cm", res = 400)
+  par(mfrow = c(1,3), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg (model_TSMdeep,  points = list(cex = 1), ylab = "")
+  mtext("Deep TSM concentration", 2, line = 1, outer = TRUE)
+  dev.off()
+}
 
 
 ### 1a Salinity Surface
@@ -340,53 +478,71 @@ full_model <- lm(Hydro_Salinity_Surface ~ River_Discharge + Winter_NAO, data = d
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_SALsurf <- get.models(min_model, 1)[[1]]
+summary (model_SALsurf)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_SALsurf)
+plot_model(model_SALsurf, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_SALsurf, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_SALsurf, type = "slope", show.data = TRUE)
+par(mfrow = c(1,2), mar = c(4,5,2,1))
+visreg(model_SALsurf,  points = list(cex = 1))
 
-ggsave ("Figures_rapp/Regressions_Salinity_Surface.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Regressions_Hydro_Salinity_SALsurf.png", width = 8, height = 6, dpi=500, ylab = "", mtext("Surface Salinity"))
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_SALsurf)
+?mtext
+if(save_plots){
+  png("Figures_rapp/Regressions_Hydro_SALsurf.png", width = 13, height = 7.5, unit = "cm", res = 400)
+  par(mfrow = c(1,3), mar = c(4,5,2,1), oma = c(0,3,0,0))
+  visreg (model_SALsurf,  points = list(cex = 1), ylab = "")
+  mtext("Surface Salinity", 2,line = 1, outer = TRUE)
+  dev.off()
+}
+
 
 ### 1a Salinity Deep
 full_model <- lm(Hydro_Salinity_Deep ~ River_Discharge + Winter_NAO, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_SALdeep <- get.models(min_model, 1)[[1]]
+summary (model_SALdeep)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_SALdeep)
+plot_model(model_SALdeep, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model(model_SALdeep, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_SALdeep, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_SALsurf,  points = list(cex = 1))
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_SALdeep)
 
 ### Chla Surface
 full_model <- lm(Hydro_Chla_Surface ~ Hydro_Salinity_Surface + Hydro_DIN_Surface + Hydro_PO4_Surface + Hydro_Si_Surface + River_TOC + River_SPM + Winter_NAO + Hydro_TotP_Surface + Hydro_TotN_Surface + Hydro_Secchi_Surface, data = dat_sel) 
 summary(full_model)
 # finne min model
 min_model <- dredge (full_model, rank = "BIC") 
-summary (get.models(min_model, 1)[[1]])
+model_CHLAsurf <- get.models(min_model, 1)[[1]]
+summary (model_CHLAsurf)
 # Plot model
 # model diagnostics
-plot(get.models(min_model, 1)[[1]])
-plot_model(get.models(min_model, 1)[[1]], type = "diag")
+plot(model_CHLAsurf)
+plot_model(model_CHLAsurf, type = "diag")
 # plot model estimates (neutral line; vertical intercept that indicates no effect)
-plot_model(get.models(min_model, 1)[[1]], sort.est = TRUE)
+plot_model (model_CHLAsurf, sort.est = TRUE)
 #effektplot
-plot_model(get.models(min_model, 1)[[1]], type = "slope", show.data = TRUE)
+plot_model(model_CHLAsurf, type = "slope", show.data = TRUE)
+par(mfrow = c(1,3), mar = c(4,5,2,1))
+visreg(model_CHLAsurf,  points = list(cex = 1))
 
-tab_model (get.models(min_model, 1)[[1]])
+tab_model (model_SALsurf)
 
 # relevant to add wind here
 # River discharge more explanatory power than NAO??? just that they change in same direction??
