@@ -28,7 +28,7 @@ library(zoo)
 #install.packages("cowplot")
 #library(cowplot)
 # library(pander)
-?geom_smooth
+#?geom_smooth
 ```
 
 ## 1. Folders and files    
@@ -120,7 +120,7 @@ tb <- df_rivers %>%
   gather("Variable", Value, TotN:Si) %>%
   filter(!is.na(Value)) %>%
   xtabs(~Station_name + Variable, .)
-tb
+#tb
 
 ```
 
@@ -139,7 +139,7 @@ gg <- df_rivers %>%
     facet_wrap(~Station_name)
 gg
 
-ggsave ("Figures_rapp/Rivers_monthly_Q_Local.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_monthly_Q_Local.png", width = 8, height = 6, dpi=500)
 
 #gg + scale_y_log10()
 ```
@@ -159,7 +159,7 @@ gg <- df_rivers %>%
     facet_wrap(~Station_name)
 gg
 
-ggsave ("Figures_rapp/Rivers_monthly_Q_Distant.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_monthly_Q_Distant.png", width = 8, height = 6, dpi=500)
 
 # gg + scale_y_log10()
 ```
@@ -237,7 +237,7 @@ df_rivers_summ_a %>%
     geom_smooth() +
     facet_wrap(~Variable, scales = "free_y", nrow = 4)
 
-ggsave ("Figures_rapp/Rivers_a_Distant_all.png", width = 8, height = 6, dpi=500)
+#ggsave ("Figures_rapp/Rivers_a_Distant_all.png", width = 8, height = 6, dpi=500)
 
 #### NOT USE
 # Local - several vars

@@ -15,7 +15,7 @@ Non-parametric tests for trends over time
     + Annual data (ending in _a, plus rivergroup_springflood)
     + Seasonal data (for seasons separately)
 * For seasonal data, note that hydrography + plankton + river seasons start in February in order to get a "full spring bloom" in quarter 1 from February to April
-* Uses data from script 05b_ ( ex. df_rivers_summ_a)
+* Uses data from script 05b_ (example: df_rivers_summ_a)
 * produces summarized data from different datatypes onn annual (Dat_a) and quarterly (Dat_q) for use in regression models (08_regression)
 * produces plots of time series trends (Kap 3.2) for quarterly and annual data for the report
 * Test = Mann-Kendall trend test (for P) and Theil-Sen's slope estimator (for percent change per year)   
@@ -55,21 +55,22 @@ df_rivers_summ_a <- read.csv("Data_produced/05_df_rivers_summ_a.csv")
 #hydrography
 df_hydro_summ_a <- read.csv("Data_produced/05_df_hydro_summ_a.csv")
 
-# plankton groups and ordination (use Bloom2)
+# plankton groups
 df_plank_summ_a <- read.csv("Data_produced/05_df_plank_summ_a.csv")
 
 # Hard-bottom lower growth limit - EQR from MSMDI (lower growth limit index)
 df_lgm <- readr::read_csv2("Datasett/Hardbunn_KOPI/HBanalysesett2.csv")
 
-# ON HOLD: ordinations and indices
-# df_plank_ord <- readr::read_csv2("Data_produced/P02ord.csv")
-# 
-# # soft bottom indices and ordinations
+# Soft bottom indices and ordinations
 df_blot_ind <- read.csv("Data_produced/01_df_blot_ind.csv")
 # rename soft-bottom stations
 levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B05"] <- "BR1"
 levels(df_blot_ind$STAS)[levels(df_blot_ind$STAS)=="B35"] <- "BT44"
 
+
+# NOT USE: importing the ordinations for plotting in Mann_kendall 
+#Plankton ordination (Bloom2): 
+# df_plank_ord <- readr::read_csv2("Data_produced/P02ord.csv")
 # # retrieving softbottom ordinations
 # df_blot_ord_05 <- readr::read_csv2("Data_produced/BBordSites_05.csv")
 # #names(df_blot_ord_05)
@@ -103,7 +104,7 @@ df1 <- df_rivers_summ_a %>%
   mutate(Value = Value/1E3) %>%
   dplyr::select(Variable, Year, Value)
 
-# HFR: removed these lines because only use distant river group
+# HFR: removed these lines because only use distant river group and not include spring flood
   #mutate(River_type = paste0("River_", River_type),
    #      Variable = sub("TrspTot_", "", Variable, fixed = TRUE)) %>%
   #mutate(Variable = paste0(River_type, "_", Variable),
@@ -152,7 +153,7 @@ df5 <- df_blot_ind %>%
    mutate(Variable = paste0("SoftBottom", "_", Variable, "_", STAS)) %>%
    select(Variable, Year, Value)
 
-#ON HOLD: ordinations and indices
+#NOT USE:  Ordinations
 # # df3b= plankton DCA1
 # df3b <- df_plank_ord %>%
 #   gather("Variable", "Value", DCA1) %>%
@@ -380,6 +381,7 @@ ggplot(df, aes(x = Change_perc, y = Variable, fill = Quarter, size = P)) +
 if (save_plots)
   ggsave ("Figures_rapp/MannKendall_q.png", width = 7, height = 8, dpi=500)
 
+
 ```
 
 ### d. Plot trends for annual data
@@ -407,7 +409,7 @@ gg + theme(
     legend.box.background = element_rect(),
     legend.margin = margin(6, 6, 6, 6),
     axis.title.x = element_text(size = rel(1)),
-    #axis.text.y = element_text(color = df$P),
+    axis.text.y = element_text(color = df$P),
     axis.text.y = element_text(face = c("plain","bold")[df$P]),
     axis.title.y = element_blank()
   )
@@ -415,6 +417,58 @@ gg + theme(
 if (save_plots)
   ggsave ("Figures_rapp/MannKendall_a.png", width = 7, height = 9, dpi=500)
 
+
+```
+
+### e. Plots of annual data, showing ONLY significant trends (for ASLO presentation)
+```{r}
+
+# create the plot
+df <- df_result_a
+df$P <- factor(df$P < 0.05, labels = c("Not significant", "Significant"))
+df <- df[order(df$Change_perc),]
+# range(df$Change_perc)
+
+# select only variables with significant trends, and make new ID column for data type
+df_s <- df %>%
+  filter(P %in% c("Significant")) %>%
+  mutate(ID=sapply(strsplit(Variable, split='_', fixed=TRUE),function(x) (x[1]))) %>%
+  mutate(ID = recode(ID, 'Plankton' = 'Bio', 'HardBottom' = 'Bio', "SoftBottom" = "Bio"))
+
+# getting nice colors for the data types
+library(colorspace)
+df_s$ID <- as.factor (df_s$ID) 
+df_s$color <- factor(df_s$ID,
+levels=c("River", "Bio", "Hydro"),
+labels=rainbow_hcl(3))
+
+
+gg <- ggplot(df_s, aes(x = Change_perc, y = reorder(Variable, Change_perc))) +
+  geom_vline(xintercept = 0) +
+	geom_point(pch = 19, size = 3) +
+  #scale_fill_manual("Trend test", values = c("lightblue", "firebrick")) +
+  #scale_size_manual("Trend test", values = c(2.5, 4)) +
+	scale_x_continuous(limits = c(-11, 4), breaks = seq(-10, 4, 2)) +
+	theme_dotplot +
+	xlab("\nChange per year (%)") +
+	ylab("Variable\n")
+
+gg
+
+gg + theme(
+    legend.position = c(.35, .98),
+    legend.justification = c("right", "top"),
+    legend.box.just = "left",
+    legend.box.background = element_rect(),
+    legend.margin = margin(6, 6, 6, 6),
+    axis.title.x = element_text(size = rel(1)),
+    axis.text.y = element_text(colour = as.character (df_s$color), face = "bold"),
+    axis.title.y = element_blank()
+  )
+
+
+if (save_plots)
+  ggsave ("Figures_presentation/MannKendall_a.png", width = 7, height = 9, dpi=500)
 
 ```
 

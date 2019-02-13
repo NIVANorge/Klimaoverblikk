@@ -18,8 +18,9 @@ Getting an overview of the data
 library(tidyverse)
 library(readxl)
 library(pander)
-library(gridExtra)
+#library(gridExtra)
 library(grid)
+library (caTools)
 ```
 
 ## 1. Folders and files    

@@ -42,8 +42,8 @@ library(sjPlot) # effectplots lmer
 library(MuMIn)
 #citation ("MuMIn")
 #citation ("ggplot2")
-citation ("rkt")
-citation ()
+#citation ("rkt")
+#citation ()
 
 #library(rJava)
 ```
