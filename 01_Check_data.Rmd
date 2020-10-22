@@ -254,7 +254,6 @@ df_blot_ind %>%
  
 ggsave ("Figures_rapp/Soft_B35_all.png", width = 8, height = 6, dpi=500)
 
-
 ```
 
 
@@ -263,6 +262,28 @@ ggsave ("Figures_rapp/Soft_B35_all.png", width = 8, height = 6, dpi=500)
 write.csv(df_blot_ind, "Data_produced/01_df_blot_ind.csv", row.names = FALSE, quote = FALSE)
 
 ```
+
+```{r soft bottom indices for publication}
+# Stations together for publication
+df_blot_ind %>%   
+  rename(`Shannon-Wiener` = H) %>% 
+  mutate(Station = ifelse(STAS == "B05", "BR1", "BT44")) %>% 
+  rename(Species = `No.species`, Individuals = `No.ind`, `Fine fraction` = `Fine.Fraction`) %>% 
+  gather("Variable", "Value", `Shannon-Wiener`:TOC) %>%
+  mutate(Variable = factor(Variable, 
+                           levels = c("Species", "Individuals", "Shannon-Wiener", 
+                                      "NQI1", "TOC", "Fine fraction")))  %>%
+  ggplot(aes(Year, Value, color = Station, fill = Station)) +
+    geom_point(size = 0.9) +
+    geom_smooth(size = 0.7, aes(linetype = Station))+
+    facet_wrap(~Variable, scales = "free_y", ncol = 2) +
+    labs(x = "", y= "") +
+  theme_bw()
+
+ggsave ("Figures_publ/Softbottom_indicies.png", width = 8, height = 6, dpi=500)
+
+```
+
  
 ## 5. Hard-bottom flora and fauna 
 
@@ -395,7 +416,6 @@ plot(df$Green/(df$Brown) ~ df$Year)
 ### g. Plot diversity indices
 
 ```{r Hard-bottom diversity}
-
 df[df$Site %in% c(407, 410), ] %>%
   gather("Group", "Value", `H`:`J`) %>%
   ggplot(aes(Year, Value, color = as.character(Site))) +
@@ -406,7 +426,34 @@ df[df$Site %in% c(407, 410), ] %>%
     labs(x = "", y= "", color = "Station")
 
 ggsave ("Figures_rapp/Hard_SpeciesDiv.png", width = 8, height = 6, dpi=500)
+
 ```
+
+### h. Plot numbers and diversity indices - for publication
+
+```{r Hard-bottom for publ}
+df[df$Site %in% c(407, 410), ] %>% 
+  dplyr::select(Year, Site, Animals, antMakroalger:`EQR`) %>% 
+  rename(Macroalgae = antMakroalger,
+         MSMDI = EQR,
+         `Shannon-Wiener` = H,
+         `Pielou's evenness` = J,
+         `Species` = S) %>% 
+  gather("Group", "Value", Animals:MSMDI) %>%
+  mutate(Station = ifelse(Site == 407, "HT113", "HR104")) %>% 
+  mutate(Group = factor(Group, levels = c("Species", "Animals", "Macroalgae", 
+                                          "Shannon-Wiener", "Pielou's evenness", "MSMDI"))) %>% 
+  ggplot(aes(Year, Value, color = Station, fill = Station)) +
+    geom_point(size = 0.9) +
+    geom_smooth(size = 0.7, aes(linetype = Station))+
+    facet_wrap(~ Group, scales = "free", ncol = 2) +
+    labs(x = "", y= "") +
+  theme_bw()
+
+ggsave ("Figures_publ/Hardbottom_indicies.png", width = 8, height = 6, dpi=500)
+
+```
+
 
 ## 6. Phytoplankton
 

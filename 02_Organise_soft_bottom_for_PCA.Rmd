@@ -22,6 +22,8 @@ require(pander)
 #install.packages("RCurl")
 library(RCurl)
 
+require(patchwork)
+
 ```
 
 ### Function for finding text in R files  
@@ -424,12 +426,18 @@ cat("Dimensions of 'spec.m_05':\n", dim(spec.m_05))
 ord1_05 <- decorana(spec.m_05, iweigh = 1)
 ord1_35 <- decorana(spec.m_35, iweigh = 1)
 
+# Tungeeffekter?
+plot(ord1_05, display = "sites")
+plot(ord1_35, display = "sites") # kanskje litt her...
+
 # Pretty longish output
 # summary(ord1) # viser arts- og rutescorer
 
 # Short output
 summary(ord1_05, display = "none")
-summary(ord1_35, display = "none")
+summary(ord1_35, display = "none") 
+
+# Envfit for å kunne legge på år
 
 # Innledende NMDS - litt usikker på utfallet 
 ord2_05 <- metaMDS(spec.m_05)
@@ -483,6 +491,14 @@ ord1_35.df <- data.frame(spec_35[,c(1:2)], ord1_35.sites)
 # skriver til csv
 write.csv2(ord1_05.df, row.names = FALSE, file = "Data_produced/BBordSites_05.csv")
 write.csv2(ord1_35.df, row.names = FALSE, file = "Data_produced/BBordSites_35.csv")
+
+# Ønske om å trekke ut andel forklart av hovedakse
+# MEN!!! Dette har Jari Oksanen skrevet:
+# The concept of total inertia does not exist in DCA. Alternative software use the total inertia from other ordination methods such as orthogonal correspondence analysis. Just call cca() for your data to get the total inertia of orthogonal CA. However, that really has no relevance for DCA, although that statistics is commonly used and ritually reported in papers.
+
+# Bruk DCA 1 som en constraining variable i en cca for å beregne andel forklart.
+cca.05 <- cca(spec.m_05 ~ DCA1, data = ord1_05.df) # 21 %
+cca.35 <- cca(spec.m_35 ~ DCA1, data = ord1_35.df) # 43 %
 
 # trekker ut species scores så de kan relateres til aksene
 ord1_05.species <- data.frame(scores(ord1_05, display = "species"))
@@ -540,12 +556,12 @@ DCAplot_3
 NEWlabels = c(B05 = "BR1", B35 = "BT44")
 
 # DCA1 til rapport
-DCA1plot <- 
+DCA1plot_bb <- 
   ggplot(ord1_both, aes(Year, DCA1)) +
     geom_point() +
     geom_smooth() +
     facet_wrap(~Site, labeller = labeller(Site = NEWlabels))
-DCA1plot
+DCA1plot_bb
 ggsave("Figures_rapp/DCA1_soft.png", DCA1plot, width = 8, height = 6, dpi=500)
 
 # Innledende NMDS
@@ -667,6 +683,29 @@ ggsave ("Figures_rapp/SoftFaunaDCA_35.png", BBartOrd_35, width = 6, height = 10,
   coord_flip() +
   theme_classic()
 
+```
+
+### j. Combine DCA main axis plots for hard and soft bottom
+```{r DCA plots publication}
+DCA1plot_hb <- HBdata_long %>% mutate(Dummy = "H", Station = ifelse(Site == 407, "HT113", "HR104")) %>% 
+  ggplot(aes(Year, DCA1, color = Station, fill = Station)) +
+    geom_point(size = 0.9) +
+    geom_smooth(size = 0.7, aes(linetype = Station))+
+    facet_wrap(~ Dummy, strip.position = "right") +
+  theme_bw()
+
+DCA1plot_bb2 <- 
+  ggplot(ord1_both, aes(Year, DCA1)) +
+    geom_point(size = 0.9) +
+    geom_smooth(size = 0.7) +
+    facet_wrap(~Site, labeller = labeller(Site = NEWlabels), ncol = 1, strip.position = "right") +
+  labs(x = "") +
+  theme_bw()
+
+DCA1plot_bb2 + DCA1plot_hb +
+  plot_layout(heights = c(2,1), ncol =1)
+
+ggsave ("Figures_publ/DCAmain.png", width = 8, height = 6, dpi=500)
 ```
 
 
