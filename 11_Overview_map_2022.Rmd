@@ -34,87 +34,27 @@ library(ggplot2)
 library(dplyr)
 library(ggrepel)
 
+library("rnaturalearth")
+library("rnaturalearthdata")
+#install.packages("rgeos")
+library ("rgeos")
+library("ggspatial")
+
 save_plot <- FALSE
 ```
 
 ## Load basemap
 ```{r}
-nc_norway <- st_read("K:/Kart/N1000/norge2.shp")
-```
 
-### Check coordinate system of the base map  
-It is NA, so we have to set it manually   
-```{r}
-# Check
-check <- st_crs(nc_norway)
-check
-
-if (is.na(check)){
-  cat("\nSet coordinate system:\n")
-  st_crs(nc_norway) <- "+proj=utm +zone=33"
-}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+#class(world)
 
 ```
 
-### Test map  
-In order to find values  xlim and ylim, use the map with 'datum' set to the 'native' coordinates  (ca. 20 seconds)   
-```{r}
-make_test_map <- TRUE
-
-if (make_test_map){
-  ggplot(nc_norway) + 
-    geom_sf() + 
-    theme_bw() +
-    coord_sf(datum = st_crs("+proj=utm +zone=33"))
-}
-
-```
-
-
-### Check background map (ca. 20 seconds)  
-```{r}
-ggplot(nc_norway) + 
-  geom_sf() + 
-  theme_bw() +
-  coord_sf(ylim = c(6.45, 6.7)*1E6, xlim = c(0.05, 0.3)*1E6)
-```
-
-## Add rivers from the ELVIS base  
-```{r}
-nc_rivers <- st_read("K:\\Kart\\ELVIS\\Hovedelv\\elvis_hovedelv.shp")
-```
-
-### Various checks on river data  
-```{r}
-# Check variables:  
-nc_rivers[1,]
-
-# Check STRAHLER klassification of river size  
-cat("\n\nStrahler classification\n------------------------------\n")
-xtabs(~STRAHLER, nc_rivers)
-
-# Check names of rivers   
-cat("\n\nRiver names\n------------------------------\n")
-cat("Strahler = 8\n")
-nc_rivers %>% filter(STRAHLER == 8) %>% xtabs(~ELVENAVN, ., drop = TRUE) %>% names() %>% dput()
-cat("Strahler = 7\n")
-nc_rivers %>% filter(STRAHLER == 7) %>% xtabs(~ELVENAVN, ., drop = TRUE) %>% names() %>% dput()
-```
+### Stations   
 
 ```{r}
-# Pick rivers to show
-rivers <- c("GLOMMAVASSDRAGET", "DRAMMENSVASSDRAGET", "SKIENSVASSDRAGET", "NUMEDALSLÅGEN")
-sel <- with(nc_rivers, ELVENAVN %in% rivers); sum(sel)
 
-ggplot(nc_norway) + 
-  geom_sf() + 
-  geom_sf(data = nc_rivers[sel,], color = "blue") + 
-  theme_bw() +
-  coord_sf(ylim = c(6.45, 6.7)*1E6, xlim = c(0.05, 0.3)*1E6)
-```
-
-## Add sampling points  
-```{r}
 df_stations <- read.csv(textConnection("Station_type, Name, Lat, Long 
 Hard bottom,HR104, 58.2732, 08.5372
 Hard bottom,HT113, 58.5132, 08.9445
@@ -127,71 +67,108 @@ River,Numedalslågen, 59.08627, 10.06962
 River,Skienselva, 59.199, 9.611
 "), stringsAsFactors = FALSE)
 
+df_stations$Station_type <- factor(
+  df_stations$Station_type,
+  levels = c("River", "Hydrography/plankton", "Hard bottom", "Soft bottom"))
+
 sf_stations <- st_as_sf(df_stations, coords = c("Long", "Lat"), crs = "+proj=longlat")
 sf_stations[1,]
+
 ```
 
-### Draw map, first try  
-```{r}
-# Even if the background map and nc_norway is in UTM coordinates and sf_stations is in long-lat, 
-#   the points automatically adjust to the background map 
+### Rivers    
 
-# However,
-# - wasn't able to use geom_text_repel as in  https://www.r-spatial.org/r/2018/10/25/ggplot2-sf-2.html
-# - wasn't able to make nudge_x working
-# But check the last map
-ggplot(nc_norway) + 
-  geom_sf() + 
-  geom_sf(data = nc_rivers[sel,], color = "blue") + 
-  geom_sf(data = sf_stations, aes(color = Station_type), show.legend = "point") + 
+- 
+- takes a minute or something to read
+
+```{r}
+
+# Using st_read in package sf
+fn <- "C:/Data/Mapdata/NVE_ELVIS_elvenett/NVEData/Elv_Hovedelv.geojson"
+sf_rivers_all <- sf::st_read(fn)
+
+# str(sf_rivers_all, 1)  
+
+```
+
+
+#### Select rivers  
+```{r}
+
+sel <- grepl("Glomma", sf_rivers$elvenavn); sum(sel)
+
+rivernames <- c("Glommavassdraget", "Drammensvassdraget", "Skiensvassdraget", "Numedalslågen")
+
+sf_rivers <- sf_rivers_all %>%
+  filter(elvenavn %in% rivernames)
+
+nrow(sf_rivers)
+
+```
+
+#### Test plot  
+```{r}
+
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = sf_rivers, color = "blue", show.legend = "point") + 
+    coord_sf(xlim = c(5, 13), ylim = c(57, 60))
+
+```
+
+```{r}
+
+leftside <- sf_stations$Name %in% c("HR104", "Arendal 2")
+table(sf_stations$Name)
+sum(leftside)
+
+p <- ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = sf_rivers, color = "blue", show.legend = "point") + 
+  geom_sf(data = sf_stations, aes(color = Station_type, pch = Station_type), show.legend = "point") + 
+  geom_sf_text(data = sf_stations[!leftside,], aes(label = Name), hjust = -0.1) +
+  geom_sf_text(data = sf_stations[leftside,], aes(label = Name), hjust = 1.1) +
+    annotation_scale(location = "bl", width_hint = 0.5) +
+    annotation_north_arrow(location = "bl", which_north = "true", 
+        pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
+        style = north_arrow_fancy_orienteering) +
+    coord_sf(xlim = c(5, 13), ylim = c(57, 60))+
+     guides(color = guide_legend(override.aes = list(size = 3) ) )
+
+p + 
+  scale_shape_discrete("Station Type") +
+  scale_color_discrete("Station Type")
+
+# Hard bottom,HR104, 58.2732, 08.5372
+# Hard bottom,HT113, 58.5132, 08.9445
+# Soft bottom,BR1, 58.3253, 08.6295
+# Soft bottom,BT44, 58.4038, 09.0312
+# Hydrography/plankton, Arendal 2, 58.3870, 8.8330
+
+```
+
+```{r}
+
+p <- ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = sf_rivers, color = "blue", show.legend = "point") + 
+  geom_sf(data = sf_stations, aes(color = Station_type, pch = Station_type), show.legend = "point") + 
   geom_sf_text(data = sf_stations, aes(label = Name), adj = -0.1) +
-  theme_bw() +
-  coord_sf(ylim = c(6.45, 6.7)*1E6, xlim = c(0.05, 0.3)*1E6) +
-  theme(axis.title = element_blank())
-```
+    annotation_scale(location = "bl", width_hint = 0.5) +
+    annotation_north_arrow(location = "bl", which_north = "true", 
+        pad_x = unit(0.75, "in"), pad_y = unit(0.5, "in"),
+        style = north_arrow_fancy_orienteering) +
+    coord_sf(xlim = c(5, 13), ylim = c(57, 60))+
+     guides(color = guide_legend(override.aes = list(size = 3,name = "Station Type" ) ) )
 
+p + 
+  scale_shape_discrete("Station Type") +
+  scale_color_discrete("Station Type")
 
-Hard bottom,HR104, 58.2732, 08.5372
-Hard bottom,HT113, 58.5132, 08.9445
-Soft bottom,BR1, 58.3253, 08.6295
-Soft bottom,BT44, 58.4038, 09.0312
-Hydrography/plankton, Arendal 2, 58.3870, 8.8330
-River station,Glomma, 59.278, 11.134
-River station,Drammenselva, 59.75399, 10.00903
-River station,Numedalslågen, 59.08627, 10.06962
-River station,Skienselva, 59.199, 9.611
-
-### Draw map, second try   
-Manual adjustment 
-```{r}
-# We make adjusted positions and a new sf object
-# For longitude, note that they also are adjusted for being mostly left-adjusted 
-#    (adj = 0 in geom_sf_text) but some are right-adjusted (adj = 1 in geom_sf_text)
-df_stations$Lat2 <- df_stations$Lat + c(-0.07,0.03,0.03,0.03,-0.07,0,0,-0.15,0)
-df_stations$Long2 <- df_stations$Long + 0.05 + c(-0.07, 0, -0.1, 0, -0.1, 0, -0.1, 0, -0.1)
-sf_stations_lab <- st_as_sf(df_stations, coords = c("Long2", "Lat2"), crs = "+proj=longlat")
-
-station_order <- c("Hydrography/plankton", "Hard bottom", "Soft bottom", "River")
-sf_stations$Station_type <- factor(sf_stations$Station_type, levels = station_order)
-
-gg <- ggplot(nc_norway) + 
-  geom_sf(fill = RColorBrewer::brewer.pal(5, name = "Pastel1")[3]) + 
-  geom_sf(data = nc_rivers[sel,], color = "blue") + 
-  geom_sf(data = sf_stations, aes(color = Station_type), show.legend = "point") + 
-  scale_color_brewer("Station type", palette = "Set1") +
-  geom_sf_text(data = sf_stations_lab, aes(label = Name), adj = c(0,0,1,0,0,0,1,0.3,1)) +
-  theme_bw() +
-  coord_sf(ylim = c(6.45, 6.7)*1E6, xlim = c(0.05, 0.32)*1E6) +
-  theme(axis.title = element_blank())
-
-if (save_plot){
-  ggsave("Figures_rapp/Oversiktskart.png", gg, dpi = 500)
-} else {
-  print(gg)
-}
 
 
 ```
+
 
 ### Draw map, using geom_text_repel  
 geom_text_repel() needs to have x and y in the data set as 'explicit' variables on the 'native' scale.  
