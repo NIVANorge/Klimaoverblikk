@@ -16,8 +16,8 @@ The "second try" map is the one used
 This code uses the new _sf_ package (which supersedes _sp_). It works nicely together with ggplot2 (see below), but for the time being (Dec. 2018) you need the _development version_ of ggplot2. See code below for details.      
   
 ## Packages
-```{r, warning=FALSE, message=FALSE, results='hide'}
 
+```r
 # Install
 # install.packages("sf")
 
@@ -46,17 +46,16 @@ save_plot <- FALSE
 ## Data 
 
 ### Load basemap
-```{r}
 
+```r
 world <- ne_countries(scale = "medium", returnclass = "sf")
 #class(world)
-
 ```
 
 ### Stations   
 
-```{r}
 
+```r
 df_stations <- read.csv(textConnection("Station_type, Name, Lat, Long 
 Hard bottom,HR104, 58.2732, 08.5372
 Hard bottom,HT113, 58.5132, 08.9445
@@ -75,8 +74,13 @@ df_stations$Station_type <- factor(
 
 sf_stations <- st_as_sf(df_stations, coords = c("Long", "Lat"), crs = "+proj=longlat")
 sf_stations[1,]
-
 ```
+
+<div data-pagedtable="false">
+  <script data-pagedtable-source type="application/json">
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["Station_type"],"name":[1],"type":["fct"],"align":["left"]},{"label":["Name"],"name":[2],"type":["chr"],"align":["left"]},{"label":["geometry"],"name":[3],"type":["sf_POINT"],"align":["right"]}],"data":[{"1":"Hard bottom","2":"HR104","3":"<sf_POINT>","_rn_":"1"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 
 ### Rivers    
 
@@ -86,8 +90,8 @@ sf_stations[1,]
 - takes a minute or something to read
 - downloaded from NVEs download site  
 
-```{r}
 
+```r
 file_rivers <- "Map_data/11_sf_rivers.rds"
 
 if (!file.exists(file_rivers)){
@@ -116,24 +120,28 @@ if (!file.exists(file_rivers)){
 }
 
 nrow(sf_rivers)
+```
 
+```
+## [1] 4
 ```
 
 #### Test plot  
-```{r}
 
+```r
 ggplot(data = world) +
   geom_sf() +
   geom_sf(data = sf_rivers, color = "blue", show.legend = "point") + 
     coord_sf(xlim = c(5, 13), ylim = c(57, 60))
-
 ```
+
+![](11_Overview_map_2022_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
 
 ## Final plot  
 
 ### Make and save plot  
-```{r, warning=FALSE}
 
+```r
 # Select different stations for positioning labels  
 leftside <- sf_stations$Name %in% c("HR104")
 br1 <- sf_stations$Name %in% c("BR1")
@@ -186,13 +194,13 @@ p2 <- p +
 # p2
 
 ggsave("Figures_publ/11_overview_map.png", p2, width = 9, height = 11)
-
 ```
 
 ### Show plot  
-```{r, warning=FALSE, fig.width=9.5, fig.height=7}
 
+```r
 p2
-
 ```
+
+![](11_Overview_map_2022_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
